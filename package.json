@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "preinstall":"./premk.sh",
+    "preinstall":"bash ./premk.sh",
     "test": "node test.js"
   },
   "dependencies": {
