@@ -13,7 +13,7 @@
   "dependencies": {
     "ejs": "^2.5.6",
     "express": "^4.15.2",
-    "sack.vfs": "github:d3x0r/sack.vfs#42645dd4ad5d1242db8ad90664bcbdf23762076d"
+    "sack.vfs": "github:d3x0r/sack.vfs#1.0.1004-rc3"
   },
   "devDependencies": {
     "got": "^11.3.0",
