@@ -14,7 +14,7 @@
   "dependencies": {
     "ejs": "^2.5.6",
     "express": "^4.15.2",
-    "sack.vfs": "^1.0.1003"
+    "sack.vfs": "d3x0r/sack.vfs#sack.vfs"
   },
   "devDependencies": {
     "got": "^11.3.0",
