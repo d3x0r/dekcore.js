@@ -1,0 +1,108 @@
+[ 
+//suspend startup
+// service is another keyword that should be implememtned 
+
+
+//[Remote] task <some task name>   #create a new task referenced by name
+
+	{ name: "Core"
+        , args: ["main.js"]
+        , program : "H:/dev2/nodejs/node.exe"
+        , path: ".."
+        , suspend: false
+        , exclusive : false
+        , restart : true
+        , assumeReadyIn: 2500
+        , minLaunchTime : 250
+        , maxLaunchsPerMinTime : 1
+        }
+        , { name: "userDatabase"
+          , args : ["../common/myNode.js"]
+          , program : "H:/dev2/nodejs/node.exe"
+          , path : "../node/userDatabase"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 1
+          , require : [ "Core" ]
+        }
+        , { name: "Auth0"
+          , args : ["../common/myNode.js"]
+          , program : "H:/dev2/nodejs/node.exe"
+          , path : "../node/Auth0"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 1
+          , require : [ "Core" ]
+        }
+        , { name: "chatAdmin"
+          , args : ["../common/myNode.js"]
+          , program : "H:/dev2/nodejs/node.exe"
+          , path : "../node/chatAdmin"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 1
+          , require : [ "Core" ]
+        }
+
+        , { name: "chatCore"
+          , args : ["../common/myNode.js"]
+          , program : "H:/dev2/nodejs/node.exe"
+          , path : "../node/chatCore"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 1
+          , require : [ "Core" ]
+        }
+
+        , { name: "groupCore"
+          , args : ["../common/myNode.js"]
+          , program : "H:/dev2/nodejs/node.exe"
+          , path : "../node/groupCore"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 1
+          , require : [ "Core" ]
+        }
+
+        , { name: "chatProtocol"
+          , args : ["../common/myNode.js"]
+          , program : "H:/dev2/nodejs/node.exe"
+          , path : "../node/chatProtocol"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 1
+          , require : [ "Core" ]
+        }
+
+        , { name: "chatStorage"
+          , args : ["../common/myNode.js"]
+          , program : "H:/dev2/nodejs/node.exe"
+          , path : "../node/chatProtocol"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 1
+          , require : [ "Core" ]
+        }
+
+]

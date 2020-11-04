@@ -1,0 +1,119 @@
+[ 
+//suspend startup
+// service is another keyword that should be implememtned 
+
+
+//[Remote] task <some task name>   #create a new task referenced by name
+
+	{ name: "WebServer"
+        , args: ["testWsHttps.js"]
+        , program : "/usr/bin/node"
+        , path: "../uiRoot"
+        , suspend: true
+        , exclusive : false
+        , restart : true
+        , assumeReadyIn: 2500
+        , minLaunchTime : 250
+        , maxLaunchsPerMinTime : 1
+        }
+	, { name: "Core"
+        , args: ["main.js"]
+        , program : "/usr/bin/node"
+        , path: ".."
+        , suspend: false
+        , exclusive : false
+        , restart : true
+        , assumeReadyIn: 2500
+        , minLaunchTime : 250
+        , maxLaunchsPerMinTime : 1
+        }
+        , { name: "userDatabase", serviceName : "userDatabase"
+          , args : ["../common/myNode.js"]
+          , program : "/usr/bin/node"
+          , path : "../node/userDatabase"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 2500
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 3
+          , require : [ "Core" ]
+        }
+        , { name: "Auth0", serviceName : "Auth0"
+          , args : ["../common/myNode.js"]
+          , program : "/usr/bin/node"
+          , path : "../node/Auth0"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 100
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 3
+          , require : [ "Core" ]
+        }
+        , { name: "chatAdmin", serviceName : "chatAdmin"
+          , args : ["../common/myNode.js"]
+          , program : "/usr/bin/node"
+          , path : "../node/chatAdmin"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 100
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 3
+          , require : [ "Core" ]
+        }
+
+        , { name: "chatCore", serviceName : "chatCore"
+          , args : ["../common/myNode.js"]
+          , program : "/usr/bin/node"
+          , path : "../node/chatCore"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 100
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 3
+          , require : [ "Core" ]
+        }
+
+        , { name: "groupCore", serviceName : "groupCore"
+          , args : ["../common/myNode.js"]
+          , program : "/usr/bin/node"
+          , path : "../node/groupCore"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 100
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 3
+          , require : [ "Core" ]
+        }
+
+        , { name: "chatProtocol", serviceName : "KCHAT"
+          , args : ["../common/myNode.js"]
+          , program : "/usr/bin/node"
+          , path : "../node/chatProtocol"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 100
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 3
+          , require : [ "Core" ]
+        }
+
+        , { name: "chatStorage", serviceName : "chatStorage"
+          , args : ["../common/myNode.js"]
+          , program : "/usr/bin/node"
+          , path : "../node/chatStorage"
+          , suspend: false
+          , exclusive : false
+          , restart : true
+          , assumeReadyIn: 100
+          , minLaunchTime : 250
+          , maxLaunchsPerMinTime : 3
+          , require : [ "Core" ]
+        }
+
+]

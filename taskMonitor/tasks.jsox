@@ -1,0 +1,20 @@
+[ 
+//suspend startup
+// service is another keyword that should be implememtned 
+
+
+//[Remote] task <some task name>   #create a new task referenced by name
+
+	{ name: "Core"
+        , args : ["--inspect", "--debug=5858", "void.js"]
+        , program : "H:/dev2/nodejs/node.exe"
+        , path: ".."
+        , suspend: false
+        , exclusive : false
+        , restart : true
+        , assumeReadyIn: 2500
+        , minLaunchTime : 250
+        , maxLaunchsPerMinTime : 1
+        }
+
+]

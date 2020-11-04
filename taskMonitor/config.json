@@ -1,0 +1,6 @@
+{
+    "discoveryTimeout" : 60000,
+   "noTimeout" : true,
+   "preloadScript" : "./taskMon.js",
+   "webRoot":"./ui"
+}

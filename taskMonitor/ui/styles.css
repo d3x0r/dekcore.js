@@ -1,0 +1,203 @@
+    body {
+        font-size:165%;
+	background-color : #dddbd3;
+    }
+    input {
+        font-size:100%;
+    }
+div{
+ /* border:1px solid red */
+
+}
+div.mouseCatcher{
+    width: 100%;
+    height:100%;
+    position:absolute;
+    z-index : 45; /* under popup zindex; over all else */
+    visibility: hidden;
+}
+ div.popup{
+	visibility:hidden;
+	right:0;
+    top:48px;
+	background-color: #666;
+	position:absolute;
+	z-index:50;
+	margin: 15px;
+	padding: 15px;
+	border-radius:10px;
+}
+/* Change the background color on mouse-over */
+.popup a:hover {
+  background-color: #ddd;
+  color: black;
+}
+
+.popup a {
+  background-color: #555;
+  color: white;
+}
+
+/* Style the active/current link*/
+.popup a.active {
+  background-color: dodgerblue;
+  color: white;
+}
+
+div.selected {
+    background-color:green;
+    color: white;
+}
+div.selected.pending {
+    background-color:#B09E4C;
+    color: white;
+}
+div.pending {
+    background-color:red;
+    color: white;
+}
+div  a:hover {
+    background-color:grey
+}
+div.contact.selected:hover {
+    background-color:darkslateblue;
+    border-bottom: #B09E4C;
+    color:white;
+}
+div.contact:hover {
+    background-color:grey;
+    border-bottom: #B09E4C;
+    color:black;
+}
+
+div.accept {
+    background:url("images/buttons/Blank L_Up.png")
+}
+div.reject {
+    background:url("images/buttons/Blank R_Up.png")
+}
+div.ignore {
+    background:url("images/buttons/group_up.png")
+}
+
+    ul.opts {
+        list-style-type: none;
+    }
+    div.Message{
+        /*float:left;
+        display:block;*/
+        width:fit-content;
+        position:relative;
+        padding-left: 10px;
+        padding-right: 10px;
+        display:inline;
+    }
+    div.Time {
+        font-size:50%;
+        /*float:left;
+        display:block;*/
+    }
+    div.senderName {
+        font-size:80%;
+        font-weight: bold;
+        /*float:left;
+        display:block;*/
+    }
+    div.messageScroller{ 
+        overflow:auto;
+        padding:5px;
+        position:relative;
+    }
+    div.messagePanel{ 
+       margin: 25px;
+    }
+    div.frameContainer {
+        /*padding-left:15px;
+        padding-top:15px; */
+        position:relative;
+        z-index: 0;
+    }
+    div.frameContent {
+        margin-left:15px;
+        margin-top:15px;
+        margin-right:15px;
+        margin-bottom:15px;
+        padding : 0px;
+       position:absolute;
+        /*width:fit-content;*/
+    }
+    div#appContainer {
+        position:fixed;
+        width:100%;
+        height:100%;
+        left:0%;
+        top:0%;
+    }
+    div.page.showing {
+	    visibility:visible;
+    }
+    div.page {
+	    visibility:hidden;
+        position:absolute;
+        width:100%;
+        bottom:0;
+        left:0%;
+        top:96px;
+    }
+    .messageTitle {
+        font-size:150%;
+    }
+    div.captionPad {
+	    padding-right:30px
+    }
+    div.caption {
+        position:absolute;
+        width:100%;
+        height:80px;
+        left:0%;
+        top:0%;
+        background-color: navy;
+        color:white;
+	    background:url('images/icons/Snake Skin.png');
+    }
+    button{font-size:100%;
+			border-radius:10px;
+			background:linear-gradient(#B09E4C, #e2d78b,#B09E4C );
+		}
+    button.simple{font-size:100%;
+			/*border-radius:10px;*/
+			background:none;
+            border-radius:0;
+            border:none;
+		}
+    button:hover.simple{font-size:100%;
+        border-radius:10px;
+        background:none;
+        border:1px;
+        border-style:ridge;
+    }
+    button.messageSend{ float: right;
+        font-weight: bold;
+        font-size:75%;
+    }
+
+    button.caption{ float: right;
+	    color:transparent;
+	    border:none;
+        background-repeat:no-repeat;
+	    background-size:contain;
+	    position:relative;
+        top:18px;
+        font-size:150%;
+	
+    }
+		div.button {
+				border-radius:10px;
+				background:lightgray;
+				padding-left:10px;
+				padding-right:10px;
+				margin:5px;
+				margin-left:25px;
+				margin-right:25px;
+				border-style:inset
+			}

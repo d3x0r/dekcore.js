@@ -1,0 +1,48 @@
+<HTML>
+    <HEAD>
+<link rel="stylesheet" type="text/css" href="styles.css">
+    </HEAD>
+    <BODY>
+        <DIV ID="appContainer">
+            <DIV class="caption">
+            <DIV class="captionPad">
+		<IMG src="images/Chatment_Logo.png"></IMG>
+                <!--BUTTON ID="Exit" class="caption" style="background: url('images/icons/Close Icon.png');background-size: contain;background-repeat:no-repeat;background-position-y:center">X</BUTTON-->
+
+            </DIV>
+            </DIV>
+
+         <DIV class="page" ID="loginPage">
+                    <CENTER>
+                            Account<BR>
+                            <INPUT ID="account" size=25></INPUT><BR>
+                            Password<BR>
+                            <INPUT ID="password" type="password"  size=25></INPUT><BR>
+                                <BR>
+                            <button ID="login"><div class="button">Login</div></button><BR>
+                                <BR>
+                            <span ID="loginStatus"></span>
+                            </CENTER>
+            
+            </DIV>
+            <DIV class="page" ID="defaultAppPage">
+		<DIV ID="tasks"></DIV>
+            </DIV>
+
+            <DIV class="page showing" ID="defaultError">
+                    <CENTER>Page Script Error (Unknown)</CENTER>
+            </DIV>
+        </DIV>
+    </BODY>
+	<SCRIPT src="json6.js" charset="UTF-8"></SCRIPT>
+	<SCRIPT src="salty_random_generator.js" charset="UTF-8"></SCRIPT>
+	<SCRIPT src="u8xor.js" charset="UTF-8"></SCRIPT>
+	<SCRIPT src="id_generator.js" charset="UTF-8"></SCRIPT>
+	<SCRIPT src="protocol.js" charset="UTF-8"></SCRIPT>
+	<SCRIPT src="login.js" charset="UTF-8"></SCRIPT>
+	<SCRIPT src="taskInfo.js" charset="UTF-8"></SCRIPT>
+	<SCRIPT src="app.js" charset="UTF-8"></SCRIPT>
+	<!--SCRIPT src="app.es6.e.js" charset="UTF-8"></SCRIPT-->
+
+	<!--SCRIPT src="app.es3.e.es3.js" charset="UTF-8"></SCRIPT-->
+</HTML>

@@ -1,0 +1,33 @@
+
+( (buf)=>{
+const key={key:"RxTlxeXLq0VeUvWiPXJ7y2i_O67vEZWG$stm2SSngyI=",keybuf:null,step:0};
+key.keybuf = new Buffer(key.key)
+const encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$_';
+const u8xor_code_encodings2 = new Uint8Array( 64* 128 );
+for( var a = 0; a < 64; a++  ) {
+   for( var b = 0; b < encodings.length; b++  ) {
+     u8xor_code_encodings2[a*128+encodings.codePointAt(b)] = a^b;
+   }
+}
+
+function u8xor(a,b) {
+	let buf = Buffer.from(a, 'utf8');
+	let c = b.keybuf;
+	let outBuf = new Buffer( buf.length );
+	let o = b.step;
+	b.step += buf.length;
+	let keylen = b.key.length-5;
+	b.step %= keylen;
+
+	for( var n = 0; n < buf.length; n++ ) {
+		let v = buf[n];
+		let mask = 0x3f;
+		if( (v & 0xE0) == 0xC0 )      { mask=0x1F; }
+		else if( (v & 0xF0) == 0xE0 ) { mask=0xF; }
+		else if( (v & 0xF8) == 0xF0 ) { mask=0x7; }
+		outBuf[n] = (v & ~mask ) | ( u8xor_code_encodings2[ ((v & mask) <<7) + (c[(n+o)%(keylen)]) ] & mask )
+	}
+	return outBuf.toString( "utf8" );
+}
+console.log( `this File:${u8xor(buf,key)}`);
+})("\u001bR|KBj7bNspp4\u00126Pjf|R@S\n\u001f,\u0014\u0015\u0000m}Ia[BHTWf}c\u001fyV\u0013>>0 Wzpg[6Gdrp\u001b\u000f\u0016K[I_U\u0001|rs\u0016\fDBqw|?VvKTlvEF=74\u0006-(lxgHF\u0016TY}\u001a\u0006\u000fv|gsW^H\u000e\u00160apRx\u000bGxd)\n\u001d.\u0014w@xQ{7T^\u0016\u001f\u001fx\\H\u0001RvzsSI\u0005\u000f\r\u0018\u0018r^}VE>qeKYp>)\u000ffP`tlHA\u0018CMiL`\u001dY\"\u001ceQB^R\u0016}|p\\v\u0005\f>gyEWpmg\u0001wPhaR\bo\r(Vh\u0012\u001b\u000ebwwk[\f\u0004\u0006M2\u0018\u0018R|KBq{n\u0004Xzy<\u000f4pjf|R@SF\u001fgTKZp9poRI\rVW`s|Tg@C>zbYG|ps\u00014\u0002&,)1;FPPm_H\\*|noJ\u0004\u0004\u001d<o\u0018\u001bXu\r\u0011?xeKYp>=\u000fm\u0002\u0005\u001ejT\\EMSk\u0014W@c16$lI\\S_`wu\u0011|PEnb\nR|rq\u000ffC}vd^FSP\u001fcSH\\mwq(\u001c\f\u0004\u001d\u0016\u0018\u001baC|FTmd%OL|j<\u0006-(r\u001d\u0003MSD\u0002YgV^\u000f99`iR\u0002_CWv:1W}D\\{7\"\u0004@zM`]Lh? \u00008@CM.UN[$$6oZkHH\u0018g*i^a\r\u0011x~gO\u00185{Jo\u0002&,\u000318@MS MIFp|>&QBLKS>2q;;\u0005\u0019|bm\u0003\t+e\u001eLyL|c)PWO\u001fDe_B\u0015&=mcUIT\b]wkl\u0013?NTgu~L\u000e{kxC:Q{ry\u0001\u0002K\u00195e_B\u0001o|odKJ\r\u001b\u0016|wf\u0011QPWxry\u0002_pg:Ds[&\u001djT\\EV\u001fkTX@`pxaM\f\u0010\u0006\u0011SPRuVcvV^AaxXP[Gp\\C\\men{eoXXKaqnWFFJ[|}a@aVEka|RMo.%\u001d%\u0016:!>\u0003\u000b\u0012}\u001850X@jjb&K\u0014UIDMq~UvzTptdN]{yg\u001d6\u001f/ylL\u0012cKQz\u0002z]vxo.\u001e\u001a\u0019\f\u0016# )\u0011:\u001e;xxy\u0002\u0014cf\u000fw\u0002279\u0000\u0012W\u0002\u0003.\f\u000f\u0014$x=-\u001e\f\u0004\u0006M\u001821\u0011uJC67}KF5|4\u00126\u001247k\u001b\u000e\u0016GQmU_Fj~e(RICABz)1S8\u000e\u0011>>+Q>5>4\u000f6W7ofImUM[ke^AgvroPK^\u0014ms8 \u0003+\u000eTptdN]{yg\u0001uMkrYT[XV~z\u0012Y\u0006Y9+&_rO\u001d<221L\u0019X;\u0014q~DWaw{A6W7ofI\u001aW\u000e]'\u001a@%\rusr\u001eNX@\u0016/2SDuCTl9mX[x6u\u00036\u0005zco\u0003\u0015\u001f\u00195\u0007V^[$z6;\u001eN\u0003MSkpdW(/8rr\n[`jVZp\u000227g^E\u0016`Jh\\^],9tsX\u0002ACXufy\u0011:\u001e;\u0017{n^\u0014z>)\u000ft\f|clK\t<+] IOJt9=;\u001eNX@\u0018~wVgM\n\u0014\u001egO@5uqVzGa74\u001bP\u0018IZw\u0014WJj~bn\u0013\u0019\u0016,?p<bEvU\u0011;*+AQlrqA-(\u0005\u001eoT@\u001e\u0002IoH\u001bA$$66\u0005\fC\u0006\n2pdW=ITppB\u000f5p?\u00046\u000b/l\u00032;ZGK.L\u001b\u0012${c`eBp\u001d<\u001b\u001b}Tg\u0005\\d`\n\t5.l\u001cp\u0019\u0005\u001e\u0000RT\u001e\u0002\u0017x\u001a\u001d\u000f4aS6\u0017\f\u0010\u001b\u0016\"jR\u00013\f\u0011>7+\n\u0014n>yNeI2'q\nt\r\u0002B\u000432Jhjs&WJ\u0005\u0006\u001ed27\u0011#]w.>+\u0017\t5.lj&\u0002&7r\u001b_WQT3\nCi?9k\f7%HJEw2xW;\u0005\u0019h7-\n\u0004mX,\u00066\u001f279Ct\u0006\u0002\u0016.A\u001bBej};\u000eT\u001a\u001d\u0016o\u0018\u00188|PE\\bmqZH>)\u000f>T/1)E_WQT.\u0013\u001bS$16s\u0006TBTiq}uTL@_}xoCZrm&t6\n'a)\u001d\u0012[CLe\u0013\u001b\u00138.?&\u0015\f\u0005Em:|:^:\u0000\u0019urrFQ{7I\u00066/1)VSEI\u001f'02R\u000e\u0010dcJY_H\u0016}gesfC\u001fjxX^F|ps\u00076\u0000zco\u0003\u0010\u0016\u000b\u0004\u0004G1LkweiRI\u0003JYu:1msQYwd+l]y{.s2Yz/qT@\u001e@Jh\u0016PJ}0kZ^\u0005\u0016,K;:5JYv~P9x^F|psFp['x|O\u001bK\u000b_.\u0013\u0000%\u000e")
