@@ -35,7 +35,8 @@ function createSpawnServer( sandbox ) {
 	
 
 	var serverOpts;
-	var server = sack.WebSocket.Server( serverOpts = { port: const PORT = process.env.PORT || 5000 } )
+	const PORT = process.env.PORT || 5000
+	var server = sack.WebSocket.Server( serverOpts = { port: PORT } )
 	console.warn( "serving on " + serverOpts.port + " at " + root);
 
 	server.onrequest( function( req, res ) {
