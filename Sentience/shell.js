@@ -23,13 +23,13 @@ if( "undefined" === typeof Λ ) {
     console.log( "Did require Entity:", Entity );
     Entity.netRequire.provide( "shell.js", exports );
     Entity.Sentience = exports;
-     text = require( "../../org.d3x0r.common/text.js");
+     text = require( "../util/text.js");
      commandStream = require('../command_stream_filter/command.js')
      labelStream = require( "../command_stream_filter/label_insert.js" );
 } else   {
     Entity = global;
     async function asyncInit() {
-       text = await require( "../../org.d3x0r.common/text.js");
+       text = await require( "../util/text.js");
        commandStream = await require('../command_stream_filter/command.js')
        labelStream = await require( "../command_stream_filter/label_insert.js" );
         //sack = await require( 'sack.vfs');

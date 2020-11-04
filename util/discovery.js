@@ -16,7 +16,7 @@
 //                     // no further received messages will be dispatched
 //   }
 
-var bits = require( "../../org.d3x0r.common/salty_random_generator.js").SaltyRNG( (salt)=>{salt.length=0;salt.push( (new Date()).getTime() ) });
+var bits = require( "../util/salty_random_generator.js").SaltyRNG( (salt)=>{salt.length=0;salt.push( (new Date()).getTime() ) });
 var dns = require('dns');
 var localAddresses;
 var v6Servers = [];

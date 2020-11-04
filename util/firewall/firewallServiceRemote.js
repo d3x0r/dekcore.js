@@ -7,7 +7,7 @@ const config = require( '../../config.js' );
 const db = require( "./firewallDb.js" );
 
 const driver = require( "./" + os.platform() + "FirewallDriver.js" );
-const srg = require( "../../../org.d3x0r.common/salty_random_generator.js" );
+const srg = require( "../util/salty_random_generator.js" );
 const IdGen = require( "../id_generator.js")
 const RNG = srg.SaltyRNG( (salt)=>salt.push( Date.now() ) );
 

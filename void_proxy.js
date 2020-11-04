@@ -7,7 +7,7 @@ var config = require ('./config.js');
 
 var Entity = require( "./Entity/entity.js" );
 var shell = require( "./Sentience/shell.js" );
-var text = require( "../org.d3x0r.common/text.js" )
+var text = require( "./util/text.js" )
 
 
 function BigBang() {

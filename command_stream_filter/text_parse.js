@@ -1,5 +1,5 @@
 
-var text = require('../../org.d3x0r.common/text.js' );
+var text = require('../util/text.js' );
 var filter_base = require( "./filter_base.js")
 var stream = require('stream')
 var util = require('util')

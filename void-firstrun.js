@@ -11,33 +11,28 @@ for( var arg = 2; arg < args.length; args++ ) {
 	}
 }
 
-var config = require ('./config.js');
+const config = require ('./config.js');
 
-var idMan = require( "./id_manager.js");
-var Entity = require( "./Entity/entity.js" );
+const idMan = require( "./id_manager.js");
+const Entity = require( "./Entity/entity.js" );
 Entity.idMan = idMan;
-
+//console.log( "ENTITY:", Entity );
 
 function BigBang() {
 	//console.log( "Config:", JSOX.stringify( config, null, "\t" ) );
 	if( config.run['The Void'] ) {
 		console.log( "System has already been pre-initialized, please startup using void-run.js" );
 
-		var Entity = require( "./Entity/entity.js" );
-
-		Entity.idMan = require( "./id_manager.js");
-
-		function BigBang() {
-			Entity.reloadAll().then( ()=>{
-				console.log( "Universe successfully reloaded.")
-				const MOOSE = Entity.create( config.run.MOOSE );
-				process.stdin.pipe( MOOSE.thread.worker.stdin );
-			})
-		}
+		Entity.reloadAll().then( ()=>{
+			console.log( "Universe successfully reloaded.")
+			const MOOSE = Entity.create( config.run.MOOSE );
+			process.stdin.pipe( MOOSE.thread.worker.stdin );
+		})
 		return;
 	}
 	console.log( "Creating the void....");
 	Entity.create( null, "The Void", "Glistening transparent black clouds swirl in the dark.", (o)=>{
+		console.log( "Void is null?", o );
 		const theVoid = o;
 		o.saved = true;
 		o.saved.then( (id)=>{

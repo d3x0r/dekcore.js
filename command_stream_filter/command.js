@@ -15,7 +15,7 @@ if( "undefined" === typeof Λ ) {
 	stream = require('stream')
 	util = require('util')
 	filter_base = require( "./filter_base.js");
-	text = require( '../../org.d3x0r.common/text.js')
+	text = require( '../util/text.js')
 	vm = require( 'vm' );
 	JSOX = require( "sack.vfs").JSOX;
 }
@@ -454,7 +454,7 @@ if( "undefined" !== typeof Λ ) {
 		stream = await require('stream')
 		util = await require('util')
 		filter_base = await require( "./filter_base.js");
-		text = await require( '../../org.d3x0r.common/text.js')
+		text = await require( '../util/text.js')
 		vm = await require( 'vm' );
 		sack = await require( 'sack' );
 		JSOX = (await require( "sack.vfs")).JSOX;

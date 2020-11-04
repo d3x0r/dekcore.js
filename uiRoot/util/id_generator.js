@@ -1,6 +1,6 @@
 "use strict";
 
-var RNG = require( "../util/org.d3x0r.common/salty_random_generator.js").SaltyRNG( getSalt );
+var RNG = require( "./org.d3x0r.common/salty_random_generator.js").SaltyRNG( getSalt );
 
 function getSalt (saltbuf) {
     saltbuf.length = 0;
