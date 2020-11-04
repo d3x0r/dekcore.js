@@ -16,7 +16,8 @@ l.commandHistory = history &&JSOX.parse( history ) || [];
 
 function openSocket() {
 
-	var ws = new WebSocket("ws://"+location.host+"/", "EntityControl");
+	const proto = location.protocol === "https:"?"wss:":"ws:";
+	var ws = new WebSocket(proto + "//"+location.host+"/", "EntityControl");
 	
 	ws.onopen = function() {
 	// Web Socket is connected. You can send data by send() method.
