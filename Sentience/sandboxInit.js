@@ -5,6 +5,7 @@ const sack = require( 'sack.vfs' );
 sack.Volume.Thread.accept( Λ, (ident,hostedVolume)=>{ console.log( "caught nativedisk" ); sandbox.nativeDisk = hostedVolume });
 
 const vm = require('vm' );
+const util = require('util');
 const u8xor = require("./util/u8xor.js")
 const idGenModule = require("./util/id_generator.js")
 const idGen = sack.SaltyRNG.id;
@@ -80,6 +81,7 @@ const sandbox = vm.createContext( {
     //, crypto: crypto
     //, config(...args) { returnpost("config",...args); })(); }  // sram type config; reloaded at startup; saved on demand
 });
+//console.log( "Adding u8xor?", sandbox.idGen );
 sandbox.idGen.u8xor = u8xor;
 sandbox.sandbox = sandbox;
 
@@ -90,3 +92,10 @@ sandbox.sandbox = sandbox;
 });
     
 
+
+process.on('unhandledRejection', err=>{
+	sack.log( util.format( "Unhandled Rejection", err ) );
+} );
+process.on('unhandledException', err=>{
+	sack.log( util.format( "Unhandled Exception", err ) );
+} );

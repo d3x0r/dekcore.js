@@ -26,6 +26,7 @@ module.exports = exports = {
 			if( inited ) return;
 			var cvolName;
 			let keys = [undefined,undefined];//[idGen.regenerator( "0" + config.Λ ), idGen.regenerator( "1" + config.Λ )];
+			vol.unlink( 'core/' + config.Λ );
 			cvol = vfs.Volume( null, cvolName = './core/' + config.Λ, keys[0], keys[1] );
 			(fc_local.store = vfs.ObjectStorage( cvol, "storage.os" ))
 				.getRoot()

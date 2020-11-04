@@ -369,6 +369,7 @@ function makeEntity(Λ) {
 			})
 		},
 		idGen() {
+			console.log( "idGen?", idGen );
 			return idGen.generator();
 		},
 		run(file, code) {
@@ -619,10 +620,10 @@ var fillSandbox = {
 	}
 	, get contains() { return  self.postGetter("contains"); }
 	//, get room() { return o.within; }
-	, idGen(cb) {
-		doLog("This ISGEN THEN?")
-		return idMan.ID(Λ, Λ.maker, cb);
-	}
+	//, idGen(cb) {
+	//	doLog("This ISGEN THEN?")
+	//	return idMan.ID(Λ, Λ.maker, cb);
+	//}
 	, console: {
 		log(...args) {
 			if (self.io.output)

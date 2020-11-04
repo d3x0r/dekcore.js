@@ -26,11 +26,12 @@ if( !( "svcDb" in config ) ) {
 	config.svcDb = { vol : await entity_.idGen() };
 }
 
-var opdb = disk.Sqlite( `option.db` );
+var opdb = vfs.Sqlite( `option.db` );
 if( !opdb ) 
-	opdb = disk.Sqlite( "svcdb.db" );
+	opdb = vfs.Sqlite( "svcdb.db" );
 console.log( "vfs?", opdb );
 var vol = opdb.op( "vol", await entity_.idGen() );
+
 vol = config.svcDb.vol;
 console.log( "service servicedb do vol:", vol );
 //DB.data = disk.Volume( vol, vol/*, me*/ );
