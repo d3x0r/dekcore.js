@@ -10,7 +10,7 @@ const JSOX = sack.JSOX;
 const path = await require( "path" );
 
 //const shell = await require( "../Sentience/shell.js" );
-doLog( util.format("What sort of require?", require.toString() ));
+//doLog( util.format("What sort of require?", require.toString() ));
 
 const root = await require.resolve("./command_stream_filter/ui");
 

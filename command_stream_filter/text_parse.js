@@ -34,7 +34,7 @@ parse.prototype._transform = function(chunk, encoding, callback) {
 	//console.log( encoding );
 	var string = chunk.toString()
 	console.log( "Text parse input: ", chunk, encoding, string );
-    doParse( string, (data)=>{ this.push( data )} );
+	doParse( string, (data)=>{ this.push( data )} );
 	callback()
 }
 

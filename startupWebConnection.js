@@ -17,8 +17,8 @@ function localClientFilter(options) {
     }
 
     localClientFilter.prototype._write = function( chunk, decoding, callback ) {
-
-        this.ws.send( JSON.stringify( {op:'write', prompt:isPrompt, data:chunk.toString( 'utf8' )} ) );
+	if( this.ws.readyState === 1 ) 
+	        this.ws.send( JSON.stringify( {op:'write', prompt:isPrompt, data:chunk.toString( 'utf8' )} ) );
         isPrompt= false;
         callback();
     }
