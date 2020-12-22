@@ -1323,7 +1323,7 @@ BloomNHash.prototype.delete = function( key ) {
 
 
 function encodeHash( stringifier ){
-	return `${BloomNHash_StorageTag}{root:${stringifier.stringify(this.root)}}`;
+	return `{root:${stringifier.stringify(this.root)}}`;
 }
 
 BloomNHash.hook = function(storage ) {
