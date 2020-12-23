@@ -597,10 +597,15 @@ var fillSandbox = {
 	, get name() { return entity.name }
 	, get desc() { return entity.description }
 	, get description() { return entity.description }
-	, get holding() { return entity.nearObjects.then(near => Promise.resolve(near.get("holding"))); }
+	, get holding() { return entity.nearObjects.then(near => near.get("holding")); }
 	, get container() { 
 		//doLog( "Getting container..."+ new Error().stack);
-		return self.postGetter("container") 
+		return self.postGetter("container").then( container=>{
+			container.parent = makeEntity(container.parent);
+			container.at = makeEntity(container.at);
+			container.from = container.from && makeEntity(container.from);
+			return container;
+		} );
 	}
 	, get near() {
 		return entity.nearObjects.then(near => Promise.resolve(near.get("near")));
