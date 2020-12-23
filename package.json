@@ -1,32 +1,28 @@
 {
-  "name": "node-js-getting-started",
-  "version": "0.3.0",
-  "description": "A sample Node.js app using Express 4",
+  "name": "dekcore",
+  "version": "0.1.0",
+  "description": "Dekware Heroku deploy",
   "engines": {
-    "node": "12.x"
+    "node": "15.x"
   },
-  "main": "index.js",
+  "main": "void-firstrun.js",
   "scripts": {
     "start": "node void-firstrun.js",
     "test": "node test.js"
   },
   "dependencies": {
-    "ejs": "^2.5.6",
-    "express": "^4.15.2",
-    "sack.vfs": "github:d3x0r/sack.vfs#1.0.1004-rc3"
+    "sack.vfs": "latest"
   },
   "devDependencies": {
-    "got": "^11.3.0",
-    "tape": "^4.7.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/heroku/node-js-getting-started"
+    "url": "https://github.com/d3x0r/dekcore.js.git"
   },
   "keywords": [
-    "node",
-    "heroku",
-    "express"
+    "dekware",
+    "sack.vfs",
+    "operting system"
   ],
   "license": "MIT"
 }

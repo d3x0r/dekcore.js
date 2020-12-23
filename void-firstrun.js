@@ -32,7 +32,7 @@ function BigBang() {
 	}
 	console.log( "Creating the void....");
 	Entity.create( null, "The Void", "Glistening transparent black clouds swirl in the dark.", (o)=>{
-		console.log( "Void is null?", o );
+		//console.log( "Void is null?", o );
 		const theVoid = o;
 		o.saved = true;
 		o.saved.then( (id)=>{

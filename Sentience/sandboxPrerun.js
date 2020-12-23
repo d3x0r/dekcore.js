@@ -369,7 +369,6 @@ function makeEntity(Λ) {
 			})
 		},
 		idGen() {
-			console.log( "idGen?", idGen );
 			return idGen.generator();
 		},
 		run(file, code) {

@@ -12,7 +12,6 @@ const JSOX=sack.JSOX;
 const JSON=sack.JSOX;
 
 
-//const db = sack.Sqlite( "id.db" );
 var config = require('./config.js');
 //console.log( "config is ", config.run.root, "and which require ?" );
 
