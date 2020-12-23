@@ -94,7 +94,7 @@ function createSpawnServer( sandbox ) {
 			res.end( "<HTML><HEAD><TITLE>404</TITLE></HEAD><BODY>Resource Not Found...</BODY></HTML>");
 		}
 	} );
-
+	let counter = 0;
 	server.onaccept( async function (conn) {
 		sack.log( util.format("Connection received with : ", conn.headers['Sec-WebSocket-Protocol'], " path:", conn.url) );
 		conn.block(); // need to do this before async returns.
@@ -110,24 +110,9 @@ function createSpawnServer( sandbox ) {
 	} );
 
 	server.onconnect( function (ws) {
-		var pend = [];
-			
+		var pend = [];			
 		console.log( "OnConnect event too??")
-		ws.onmessage( function( msg ) {
-				console.warn( "original acceptor Received data:", msg );
-
-		} );
-		ws.onclose( function() {
-				//console.log( "Remote closed" );
-			} );
 	} );
-}
-
-var counter = 1;
-
-async function spawnEntity( ws ) {
-
-
 }
 
 

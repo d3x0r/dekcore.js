@@ -17,7 +17,7 @@ function localClientFilter(options) {
     }
 
     localClientFilter.prototype._write = function( chunk, decoding, callback ) {
-	if( this.ws.readyState === 1 ) 
+    if( this.ws.readyState === 1 ) 
 	        this.ws.send( JSON.stringify( {op:'write', prompt:isPrompt, data:chunk.toString( 'utf8' )} ) );
         isPrompt= false;
         callback();
@@ -50,22 +50,25 @@ return require("sack.vfs" ).then(sack=>{
                 shell.connectOutput( output );
         }).catch(err=>console.log( "SOMSDFLKSDJFLKJ:", err))
     
+			let lastTick = Date.now();
+			function tick() {
+				const now = Date.now();
+				if( ( lastTick - now ) > 30000 ){
+					lastTick = now;
+					ws.ping();
+				}
+				setTimeout( tick, 15000 );
+    		}
+			tick();
         //console.log( "Setup message handeler..." );        
         ws.onmessage( function( msg ) {
+				lastTick = Date.now();
             // this goes out the socket that a message has come in on?
             // only this thread is different than the receiving thread.
             //console.log( "Got message:", msg );
             var msg_ = JSOX.parse( msg );    
             if( msg_.op === "write" ) {   
                 nl.write( msg_.data );
-            } else if( msg_.op === "load" ) {   
-                // get a script from this file's storage.
-                //nl.write( msg_.data );
-            } else if( msg_.op === "save" ) {   
-                // update a script into the storage... 
-                //nl.write( msg_.data );
-            } else {   
-                
             }  
         } );  
         ws.onclose( function() {  

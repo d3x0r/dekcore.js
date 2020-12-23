@@ -72,6 +72,9 @@ const sandbox = vm.createContext( {
     , console:console
     , process: process
     , idGen : idGenModule
+    , _setTimeout : setTimeout
+    , _clearTimeout : clearTimeout
+    , _setInterval : setInterval
     , onInit(cb) {
         if( initDispatched)cb();
         else pendingInit.push(cb);

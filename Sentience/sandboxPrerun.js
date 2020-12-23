@@ -4,7 +4,7 @@ const _debug_requires = false;
 const _debug_command_input = false;
 const _debug_command_post = _debug_commands || false;
 const _debug_command_run = _debug_commands || false;
-
+const __setTimeout = _setTimeout;
 // debug spcificall the get near command.... 
 const _debug_near = false;
 
@@ -39,6 +39,7 @@ function doLog(...args) {
 
 var mid = 0;
 var eid = 0;
+let timerId = 0; // used to uniquely identify timers
 const objects = new Map();
 const self = this;
 const entity = makeEntity(Λ);
@@ -714,7 +715,7 @@ var fillSandbox = {
 		if (this._timers)
 			this._timers.pred = timerObj;
 		this._timers = timerObj;
-		const cmd = `let tmp=_timers;
+		const cmd = `{let tmp=_timers;
             while( tmp && tmp.id !== ${timerObj.id})
                 tmp = tmp.next;
             if( tmp ) {
@@ -723,8 +724,8 @@ var fillSandbox = {
                 if( tmp.next ) tmp.next.pred = tmp.pred;
                 if( tmp.pred ) tmp.pred.next = tmp.next; else _timers = tmp.next;
             }
-        `;
-		timerObj.to = setTimeout(() => {
+        }`;
+		timerObj.to = _setTimeout(() => {
 			vmric(cmd, sandbox);
 		}, delay);
 		//timerObj.to.unref();

@@ -6,6 +6,8 @@ connect to port specified.   Use commands.
 
 Internally Entities are created and tracked by the core.
 
+[Heroku Deployment](https://dekware.herokuapp.com/) 
+
 Entities which have wareness are isolated into worker threads, and have a 'view' of the common core state, or may query the core for the state directly. 
 Events are dispatched as entity relationships are changed so that observers can be notified of said changes;
 When the changes happen, the internal view of the objects can be updated.  The current environment is really just what the entity knows already or has a reference of, or

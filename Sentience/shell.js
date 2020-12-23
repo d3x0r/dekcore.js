@@ -551,7 +551,7 @@ function Filter( e ) {
                 if( !lookIn && !lookAt ){
                     room = await room;
                     var exits = await room.holding ;
-                    var s = "Room: " + await room.parent.name + "\n" + await room.parent.description;
+                    var s = "Room: " + (await (await room.container).parent.name) + "\n" + await (await room.container).parent.description;
                     for( let path = room.from; path; path = path.from ){
                         s += ' via ' + await path.at.name;
                     }
