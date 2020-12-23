@@ -83,7 +83,7 @@ function Filter( e ) {
                 var out = "";
                 output( "Commands are prefixed with a '/'.  '/help' for example... ");
                 output( "Default output goes to your local sandbox as if a REPL. ");
-                output( "Through actions, the default stream output can be redirected to other things; for example if a TCP connection to a MUD was mad, then the command stream filters added for processing MUD I/O streams would get the output instead of the JS engine. ")
+                output( "Through actions, the default stream output can be redirected to other things; for example if a TCP connection to a MUD was made, then the command stream filters added for processing MUD I/O streams would get the output instead of the JS engine. ")
                 output( "The '/exec' command can be used in case it is still required to send. ")
                 output( "If the line is prefixed with a '.' the dot is stripped, and the remaining command is passed to the stream; for example you want to send '/help' you might use './help' to bypass this command filter.\n")
                 output( "-------------------\n");
