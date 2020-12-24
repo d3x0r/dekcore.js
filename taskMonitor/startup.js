@@ -1,8 +1,9 @@
 
-var myName = "chatment.taskmonitor";
+var myName = "dekcore.taskmonitor";
 if( process.argv > 2 ) {
 	myName = process.argv[2];
 }
+
 
 const vfs = require( 'sack.vfs');
 const nativeVol = vfs.Volume();
@@ -27,6 +28,7 @@ var mySid = null;
 var userDb;
 const connectionKeys = new Map();
 
+const config = require( "../config.js" );
 certGen.init( config.run.identity.raddr.address+":"+config.run.identity.parts[3], ()=>{
 	https.addProtocol( myName, (conn)=>{
 		// keep connection and auto timeout for idle?

@@ -12,13 +12,14 @@ const JSOX=sack.JSOX;
 const JSON=sack.JSOX;
 
 
+//const db = sack.Sqlite( "id.db" );
 var config = require('./config.js');
 //console.log( "config is ", config.run.root, "and which require ?" );
 
 const fc = require('./file_cluster.js')
 const Entity = require('./Entity/entity.js')
-var IdGen = require("./util/id_generator.js");
-var idGen = IdGen.generator;
+const IdGen = require("./util/id_generator.js");
+const idGen = IdGen.generator;
 let loaded = false;
 var keyRefs = new WeakMap();
 

@@ -2,9 +2,9 @@
 var sack = require( "sack.vfs" );
 const JSON = sack.JSON6;
 try {
-var taskConfig = require( "./tasks.json6" );
+var taskConfig = require( "./tasks.jsox" );
 } catch( err ) {
-	console.log( "You need a tasks.json6 config.", err );
+	console.log( "You need a tasks.jsox config.", err );
 }
 var tasks = {};
 
