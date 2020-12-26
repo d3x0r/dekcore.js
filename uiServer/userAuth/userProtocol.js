@@ -8,24 +8,25 @@ var peers = [];
 
 //console.log( "user protocol look:", entity.look() );
 //console.log( "user protocol inv:", entity.inventory );
-console.warn( "Diredt output? UserProtocol Register?");
+console.warn( "Direct output? UserProtocol Register?");
 
 async function initServices() {
 	var nearThings = await near;
-	console.log( "nearThings:", nearThings );
-	if(0) {
-	var nearNames = nearThings.map( near=>near.name);
+	//console.log( "userProtocol.js: nearThings:", nearThings );
+	const nearNames = [];
+	const nearObjects = [];
+	nearThings.forEach( thing=>{ nearNames.push(thing.name); nearObjects.push( this ); } );
+
 	Promise.all( nearNames ).then( nearNames=>{
-		var serviceDirectory = nearNames.find( near=> near === "Services" );
+		var serviceDirectory = nearNames.findIndex( near=> near === "Services" );
 
-		if( serviceDirectory ){
+		if( serviceDirectory >= 0){
 
-			serviceDirectory = serviceDirectory.o;
+			serviceDirectory = nearObjects[serviceDirectory];
 		
 			console.log( "service directory inventory:", serviceDirectory.inventory );
 		}
 	} )
-	}
 }
 initServices();
 

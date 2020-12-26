@@ -5,7 +5,7 @@ var DB = exports = module.exports = {};
 var vfs = await require( 'sack.vfs');
 const IdGen = await require( "../../util/id_generator.js" );
 const idGen = IdGen.generator;
-console.log( "isGen:", IdGen, idGen );
+//console.log( "isGen:", IdGen, idGen );
 /*
 	// these IDs would get saved with the entity config setting.
 if( !config.firewall ) {

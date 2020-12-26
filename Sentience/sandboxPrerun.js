@@ -33,21 +33,23 @@ const coreThreadEventer = wt.parentPort;
 
 function doLog(...args) {
 	var s = util.format(...args);//+ new Error().stack;
-	sack.log(s);
+
+	sack.log('sandboxPrerun:'+s);
 	//console.log(s);
 }
+const resolvers = {};
+const rejectors = {};
+const pendingOps = [];
+
 
 var mid = 0;
 var eid = 0;
 let timerId = 0; // used to uniquely identify timers
+let myName = 'unnamed';
 const objects = new Map();
 const self = this;
 const entity = makeEntity(Λ);
 //console.log( "This is logged in the raw startup of the sandbox:", Shell );
-
-const resolvers = {};
-const rejectors = {};
-const pendingOps = [];
 
 const drivers = [];
 var remotes = new WeakMap();
@@ -119,9 +121,11 @@ function processMessage(msg, stream) {
 	} else if (msg.op === "ing") {
 		return sandbox.ing(msg.ing, msg.args);
 	} else if (msg.op === "On") {
+		console.log( "capital On ", msg );
 		var e = objects.get(msg.on);
 		switch (true) {
 			case "name" === msg.On:
+				myName = msg.args;
 				e.cache.name = msg.args;
 				break;
 			case "description" === msg.On:
@@ -140,11 +144,13 @@ function processMessage(msg, stream) {
 		//reply(msg.out);
 		return;
 	} else if (msg.op === "on") {
-		_debug_event_input && doLog("emit event:", msg);
+		_debug_event_input && doLog( myName, ":emit event:", msg);
 		var onEnt = (msg.Λ && makeEntity(msg.Λ)) || entity;
-
+		
 		// this handles argument conversion for known types
 		// it also calls updates of internal cache
+
+		_debug_event_input && onEnt.name.then( name=>console.log( "(delayed emit message)on:", msg.on, "to", name, onEnt.name, msg.args.name ) );
 		switch (true) {
 			// this is an internal function, and object does not get
 			// notified for events.
@@ -154,13 +160,16 @@ function processMessage(msg, stream) {
 				return;
 			case "name" === msg.on:
 				onEnt.cache.name = msg.args;
+				myName = msg.args;
 				//msg.args = makeEntity( msg.args)
 				break;
 			case "rebase" === msg.on:
 				msg.args = makeEntity(msg.args);
+				console.log( "rebase function not functioning");
 				break;
 			case "debase" === msg.on:
 				msg.args = makeEntity(msg.args);
+				console.log( "debase function not functioning");
 				break;
 			case "joined" === msg.on:
 				msg.args = makeEntity(msg.args);
@@ -174,17 +183,25 @@ function processMessage(msg, stream) {
 				msg.args = makeEntity(msg.args);
 				onEnt.cache.near.placed(msg.args);
 				break;
+				/*
 			case "displaced" === msg.on:
 				//msg.args = makeEntity( msg.args );
 				break;
+				*/
 			case "stored" === msg.on:
 				onEnt.cache.near.store(makeEntity(msg.args));
 				
 				break;
+				
 			case "lost" === msg.on:
 				msg.args = makeEntity(msg.args);
-				onEnt.cache.near.lose(msg.args);
+				const real = onEnt.cache.real;
+				if( real ) {
+					onEnt.cache.near.lose(msg.args);
+					doLog( "cache now is:",myName, onEnt.cache.real );
+				}
 				break;
+				
 			case "attached" === msg.on:
 				msg.args = makeEntity(msg.args);
 				onEnt.cache.near.attached(msg.args);
@@ -197,10 +214,13 @@ function processMessage(msg, stream) {
 				msg.args = makeEntity(msg.args);
 				//console.log( "Created Entty needs to be 'created'", onEnt, msg );
 				if( onEnt.cache.near )
-					onEnt.cache.near.joined( msg.args )
+					onEnt.cache.near.created( msg.args )
 				break;
 			case "newListener" === msg.on:
 				//msg.args = makeEntity( msg.args );
+				break;
+			default:
+				console.log( "Event not handled:", msg );
 				break;
 		}
 		//sack.log(util.format( "Emit event:", msg.on, msg.args ));
@@ -218,7 +238,8 @@ function processMessage(msg, stream) {
 			_debug_commands && doLog(util.format("command resolution:", msg, response));
 			response.resolve(msg.ret);
 		} else if (msg.op === 'error') {
-			_debug_commands && doLog(util.format("command Reject.", msg, response));
+			//_debug_commands && 
+			doLog(util.format("command Reject.", msg, response));
 			response.reject(msg.error);
 		}
 	} else {
@@ -255,6 +276,7 @@ function makeEntity(Λ) {
 	var roomCachePromise;
 	const e = {
 		Λ: Λ
+		, watched : false
 		//, send( msg ){ coreThreadEventer.postMessage( msg ); }
 		, post(name, ...args) {
 			_debug_command_post && doLog("entity posting:",  name, Λ, args);
@@ -284,7 +306,12 @@ function makeEntity(Λ) {
 			return e.post("hold", target.Λ);
 		},
 		cache: {
-			near: {},
+			get real(){
+				return nearCache;
+			},
+			near: {
+				// this turns out to be the even handling interface.
+			}, 
 			within:null,
 		},
 		attach(toThing) {
@@ -312,12 +339,20 @@ function makeEntity(Λ) {
 		get name() {
 			//console.log( "Get name:", e, nameCachePromise );
 			if (nameCachePromise) return nameCachePromise;
-			return nameCachePromise = e.postGetter("name");
+			return nameCachePromise = (e.postGetter("name").then((name)=>{if( e === entity ) myName = name; return name;}));
 		},
 		get description() {
 			if (descCachePromise) return descCachePromise;
 			return descCachePromise = e.postGetter("description");
 		},
+		/*
+		get postState() {
+			return this.state;
+		},
+		get state() {
+			return this.state;
+		},
+		*/
 		get contents() {
 			if (nearCache) {
 				try {
@@ -328,11 +363,10 @@ function makeEntity(Λ) {
 				}
 				return Promise.resolve(nearCache.get("contains"));
 			}
-			return new Promise(res => {
-				this.nearObjects.then(nearCache => res(nearCache.get("contains")))
-			})
+			return this.nearObjects.then(nearCache => nearCache.get("contains"));
 		},
 		get container() {
+			doLog( myName, "thread getting container", e.name );
 			return e.postGetter("container").then((c) => {
 				c.at = makeEntity(c.at);
 				c.parent = makeEntity(c.parent);
@@ -355,11 +389,12 @@ function makeEntity(Λ) {
 
 		get nearObjects() {
 			if (nearCachePromise) {
-				//console.log( "Should just naturally be a promise we can return...", nearCachePromise );
+				//console.trace( myName, e.name, "Should just naturally be a promise we can return...", nearCachePromise );
 				return nearCachePromise;
 			}
+			//doLog( "sandboxPrerun:This is requesting nearObjects from the other side..." );
 			return ( nearCachePromise = this.postGetter("nearObjects") ).then(result => {
-				nearCache = result;
+				nearCache = result;				
 				result.forEach((list, key) => {
 					if( list )
 						list.forEach((name, i) => {
@@ -393,37 +428,60 @@ function makeEntity(Λ) {
 						return codeStack[result].result
 					return result;
 				})
-				.catch(err => sandbox.io.output(util.format(err)));
+				.catch(err => sandbox.io.output("sandboxPrerun:require error:"+util.format(err)));
 		},
 		idMan: {
 			//sandbox.require( "id_manager_sandbox.js" )
 			ID(a) {
 				return e.post("idMan.ID", a);
 			}
+		},
+		ignore(a) {
+			e.post("ignore", a.Λ.toString());
+			a.watched = false;
+		},
+		watch(a) {
+			e.post("watch", a.Λ.toString());
+			a.watched = true;
 		}
 	};
 	e.require.resolve = function(a) {
 		return a;
 	}
-	e.cache.near.invalidate = (e) => (nearCache = null);
+	e.cache.near.invalidate = (e) => (nearCachePromise = nearCache = null);
 
 	// my room changes...  this shodl clear cache
-	e.cache.near.displaced = ((e) => ((roomCache = null),(nearCache = null)));
-	e.cache.near.placed = ((e) => ((roomCache = e,roomCachePromise=Promise.resolve(e)),(nearCache = null)));
+	e.cache.near.displaced = ((e) => ((roomCache = null),(nearCachePromise = nearCache = null)));
+	e.cache.near.placed = ((ent) => ((roomCache = ent,roomCachePromise=Promise.resolve(e)),(nearCachePromise = nearCache = null)));
 
-	e.cache.near.store = ((e) => (!!nearCache) && nearCache.get("contains").set(e.Λ.toString(), e));
-	e.cache.near.lose = ((e) => (!!nearCache) && nearCache.get("contains").delete(e.Λ.toString()) );
+	e.cache.near.store = ((ent) => (!!nearCache) && nearCache.get("contains").set(ent.Λ.toString(), ent));
+	e.cache.near.lose = ((ent) => (!!nearCache) && (e.ignore(ent), nearCache.get("contains").delete(ent.Λ.toString())) );
 
-	e.cache.near.joined = ((e) => (!!nearCache) && nearCache.get("near").set(e.Λ.toString(), e));
-	e.cache.near.part = ((e) => (!!nearCache) && nearCache.get("near").delete(e.Λ.toString()));
-	e.cache.near.attached = ((e) => (!!nearCache) && nearCache.get("holding").set(e.Λ.toString(), e));
-	e.cache.near.detached = ((e) => (!!nearCache) && nearCache.get("holding").delete(e.Λ.toString()));
-	//e.cache.near.created = ((e2) => console.log( "CREATED EVENT:", e.name,e2.name ));
-	if (objects.size){
-		//sack.log( "Telling e to watch me?" + e.Λ.toString() +"\n"+(new Error().stack) );
-		e.post("watch", Λ.toString());
+	e.cache.near.joined = ((ent) => (!!nearCache) && nearCache.get("near").set(ent.Λ.toString(), ent));
+	e.cache.near.part = ((ent) => (!!nearCache) && (e.ignore(ent), nearCache.get("near").delete(ent.Λ.toString())));
+
+	e.cache.near.attached = ((ent) => (!!nearCache) && nearCache.get("holding").set(ent.Λ.toString(), ent));
+	e.cache.near.detached = ((ent) => (!!nearCache) && (e.ignore(ent), nearCache.get("holding").delete(ent.Λ.toString())));	
+
+	e.cache.near.created = ((e2) => e2.name.then( e2Name=>{
+		//console.log( "CREATED EVENT:", e.name, e2Name );
+	}) );
+/*
+	if (objects.size){ // first object is myself; don't watch self.
+		//doLog( "Posting watch 1..." );
+		//e.name.then( (name)=>doLog( "Creating object:, auto watching:", name, entity.name ) );
+
+		// I don't need to watch things i haven't even looked at either...
+		//e.watch( e );
 	}
-	//console.log( "ID:", Λ );
+	// don't auto watch every object's root container....
+	if( !remotes /*&& ( e.container !== entity && !e.container.watched )* / ) {
+		//doLog( "Posting watch 2..." );
+		//e.name.then( name=>doLog( "Auto followed to container",name) );
+		//e.postGetter("container");
+	} else 
+		doLog( "sandboxPrerun:while re-posting is harmless, it is extra overhead (not watching)(or is already THE object)")
+*/
 	objects.set(Λ, e);
 	
 	return e;
@@ -539,12 +597,12 @@ var fillSandbox = {
 				if ("string" === typeof c) {
 					return val.post("wake").then(() => {
 						return val.post("postRequire", c).then((result) => {
-							return Promise.resolve(val);
+							return val;
 						})
 					});
 				}
 				else {
-					return Promise.resolve(val);
+					return val;
 				}
 			}
 		);
@@ -609,7 +667,8 @@ var fillSandbox = {
 		} );
 	}
 	, get near() {
-		return entity.nearObjects.then(near => Promise.resolve(near.get("near")));
+		//console.log( "'near' getter is called which returns a promise...");
+		return entity.nearObjects.then( near => near.get("near") );
 	}
 	, get exits() {
 		//doLog( "Getting exits..."+ new Error().stack);
@@ -623,7 +682,7 @@ var fillSandbox = {
 			})()
 		}
 	}
-	, get contains() { return  self.postGetter("contains"); }
+	, get contains() { return  self.postGetter("contents"); }
 	//, get room() { return o.within; }
 	//, idGen(cb) {
 	//	doLog("This ISGEN THEN?")
@@ -700,7 +759,7 @@ var fillSandbox = {
 		return this.emit(event, args);
 	}
 	, emit(event, ...args) {
-		_debug_event_input && doLog("Emitting event(or would):", event, event in sandbox.events, sandbox.events, ...args)
+		_debug_event_input && doLog("Emitting event(or would):", event )
 		if (event in sandbox.events) {
 			sandbox.events[event].forEach((cb) => cb(...args));
 		}
@@ -777,28 +836,28 @@ var fillSandbox = {
 		// includes everything regardless of text.
 		// callback is invoked with value,key for each
 		// near object.
+		//console.log( "Src is not?", src );
+		_debug_near && console.trace ("Getting objects... around me...", me.Λ, (src&&src.length)?src[0].toString():'null', all );
+		let disableParticples = false;
 
-		//console.trace ("Getting objects... around me...", me.Λ, src[0].toString(), all );
+		if( "object" === typeof all ) {
+			disableParticples = all.disableParticples;
+			all = all.all;
+		}
 		if( "function" === typeof all ){
 			callback = all;
 			all = true;
 			console.log( new Error("Please update caller of getObjects:").stack );
 		}
-		var object = src && src[0];
+		let object = src && src[0];
 		if (!src) all = true;
-		var disablePariticiples = false;
-		if( all ) {
-			disableParticipiles = all.disablePariticples;
-			all = all.all;
-		}
-		var awaitList = [];
-		var name = object && object.toString();
-		var count = 0;
-		//var all = false;
-		var run = true;
-		var tmp;
-		var in_state = false;
-		var on_state = false;
+		const awaitList = [];
+		let name = object && object.toString();
+		let count = 0;
+		let run = true;
+		let tmp;
+		let in_state = false;
+		let on_state = false;
 
 		//console.trace( "args", me, "src",src, "all",all, "callback:",callback )
 		if (typeof all === 'function') {
@@ -817,35 +876,38 @@ var fillSandbox = {
 			name = object.toString();
 			count = tmp;
 		}
-		console.log( "Looking for:", name );
-		if( !disablePariticiples) {
+		//console.log( "Looking for:", name, disableParticples );
+		if( !disableParticples) {
 			if (src && src.length > 1 && src[1].text === "in") {
 				//console.warn("checking 'in'");
 				in_state = true;
 				src = src.slice(2);
 				console.log( "There was an in parameter?" );
 				return getObjects(me, src, all, (o, oName, location, moreargs) => {
-					o = objects.get(o.me);
-					console.log("in Found:", o.name, name);
-					o.contents.forEach(async content => {
-						//if (value === me) return;
-						content.name.then( contentName => {
-							if (!object || (contentName) === name) {
-								console.log("found object", contentName);
-								if (count) {
-									if( --count ) // do run on count to 0
-										return;
-									run = true;
+					if( o ) {
+						//o = objects.get(o.me);
+						console.log("in Found:", o.name, name);
+						o.contents.then( contents=>
+							contents.forEach( content => {
+							//if (value === me) return;
+							content.name.then( contentName => {
+								if (!object || (contentName) === name) {
+									console.log("found object", contentName);
+									if (count) {
+										if( --count ) // do run on count to 0
+											return;
+										run = true;
+									}
+									if (run) {
+										console.log("and so key is ", location+"contained", contentName);
+										if( callback(content, content.name, location + ",contains", src.splice(1)) === false )
+											count++;
+										run = all;
+									}
 								}
-								if (run) {
-									console.log("and so key is ", location+"contained", contentName);
-									if( callback(content, content.name, location + ",contains", src.splice(1)) === false )
-										count++;
-									run = all;
-								}
-							}
-						} );
-					})
+							} );
+						}))
+					}
 				})
 			}
 			if (src && src.length > 1 && (src[1].text == "on" || src[1].text == "from" || src[1].text == "of")) {
@@ -881,9 +943,10 @@ var fillSandbox = {
 		//doLog( "Simple object lookup; return promise in getObjects()");
 		return new Promise((res) => {
 			//var command = src.break();
-			entity.nearObjects.then(checkList => {
+			_debug_near && console.log( "doing actual object scan:", me.name );
+			me.nearObjects.then((checkList,location) => {
 				var names = [];
-				_debug_near && console.log( "NEar Objects lookup:", checkList );
+				_debug_near && console.log( "NEar Objects lookup:", checkList, location );
 				checkList.forEach(function (value, location) {
 					// holding, contains, near
 					//doLog("checking key:", run, location, value)
@@ -894,9 +957,9 @@ var fillSandbox = {
 						//doLog( "Pushed a name as a promise");
 					})
 				});
-				_debug_near &&console.log( "Names:", names );
+				//_debug_near &&console.log( "Names:", names );
 				Promise.all(names).then(names => {
-					_debug_near &&console.log( "Check list:", names, run );
+					_debug_near &&console.log( "Check list:", names.length, run );
 					names.forEach((check, i) => {
 						if (!run) return;
 						if (check.e === me) return;
@@ -922,7 +985,7 @@ var fillSandbox = {
 						}
 					})
 					_debug_near &&console.log( "Call done callback" );
-					callback(null, null, []);
+					callback(null, null, null, []);
 					Promise.all(awaitList).then(res)
 				})
 			})

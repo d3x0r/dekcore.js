@@ -27,7 +27,8 @@ if( !( "svcDb" in config ) ) {
 }
 
 const disk = nativeDisk;
-doLog( "Servicedb?", disk );
+//doLog( "Servicedb?", disk );
+
 if(0) {
 var opdb = disk.Sqlite( `option.db` );
 if( !opdb ) 

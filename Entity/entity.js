@@ -3,24 +3,19 @@ const _debug_require = false;
 const _debugPaths = _debug_require || false;
 const _debug_threads = false;
 const _debug_run = false;
+const _debug_look = false;
+const _debug_rebase = false;
 
 const events = require('events');
-const os = require( 'os' );
 const url = require( 'url' );
-const tls = require( 'tls' );
-const https = require( 'https' );
-const path = require( 'path' );
 const cp = require( 'child_process');
-const vm = require('vm');
 const fs = require('fs');
-const stream = require('stream');
 const util = require('util');
 const process = require('process');
-const crypto = require('crypto');
 const sack = require( "sack.vfs" );
 const vfs = require('sack.vfs');
+const idMan = require( '../id_manager.js');
 const vol = vfs.Volume();
-const vfsNaked = require('sack.vfs');
 const JSOX = sack.JSOX;
 
 //JSOX.registerToJSOX( "entity", Entity,
@@ -120,7 +115,7 @@ JSOX.defineClass( "entity", { Λ:null
 	, created_by: null
 	, sandbox : null
 	, _module : null
-	, value : null
+	, state : null
 } )
 */
 // this is used to generate an http request to the real core(if there is one?)
@@ -139,7 +134,7 @@ config.start( ()=>{
 })
 function doLog(...args){
 	var s = util.format(...args);
-	vfs.log(s);
+	vfs.log('Entity:'+s);
 	console.log(s);
 }
 
@@ -308,7 +303,6 @@ function sandboxWSS( opts ) {
 
 
 //
-//doLog( "vfsNaked is something?", vfsNaked );
 
 const volOverride = `(function(vfs, dataRoot) {
 	vfs.mkdir = vfs.Volume.mkdir;
@@ -396,7 +390,7 @@ function sealEntity(o) {
 	*/
 	if(0)
 		[ "attach", "create"
-		, "has_value", "loaded"
+		, "has_state", "loaded"
 		, "assign", "detach", "rebase", "debase", "drop", "store", "fromString", "toString"
 		, "EventEmitter", "usingDomains", "defaultMaxListeners", "init", "listenerCount", "requested"
 		, "addListener", "removeListener", "removeAllListeners", "vol"
@@ -508,16 +502,19 @@ function makeEntity(obj, name, description, callback, opts) {
 			})
 		} 
 		//console.log( "Finish create and set in container:", o.Λ );
-		if (o.within) o.within.contains.set(o.Λ.toString(), o.Λ.toString() );
+		if (o.within) o.within.contains.set(o.Λ.toString(), o );
 		else {
 			o.within = o;
             //console.log( "Set object:", o.Λ, o);
 			//objects.set(createdVoid.Λ.toString(), o);
 		}
+		sealEntity(o);
+		/*
 		o.within.contains.forEach(near => {
 			const nearo = objects.get(near);
 			nearo&&	nearo.thread&&nearo.thread.emit("created", o.Λ.toString()) 
 		});
+		*/
 		let oldId = o.Λ.toString();
 		objects.set(oldId, o);
 		
@@ -532,33 +529,27 @@ function makeEntity(obj, name, description, callback, opts) {
 				a.attached_to.delete( oldId );
 				a.attached_to.set( newId, o );
 			}
-			if( o.thread )
-				o.thread.emit( "rekey", o.Λ );
+			o.emit( "rekey", o.Λ );
 			o.saved = o.saved; // save it if it is saved.
 		})
-		//o.attached_to.set(o.Λ.toString(), o);
 
-		sealEntity(o);
 		if( o.within ) {
-			if( o.within.thread ) {
-				o.within.thread.emit("created", o.Λ);
-				o.within.thread.emit("stored", o.Λ);
-			}
+			o.within.emit("created", o.Λ);
+			o.within.emit("stored", o.Λ);
 		}
-		o.within.contains.forEach(near => (near !== o.Λ) ?
-			( near.thread )&&
-				near.thread.emit("joined", o.Λ) 
+		o.contains.forEach(near => (near !== o.Λ) ?
+				near.emit("joined", o.Λ) 
 			: 0 
 		);
 
 		if (!callback)
-			throw ("How are you going to get your object?");
+			throw new Error("No Callback specified to create entity?");
 		else {
 			//doLog(" ---------- Result with completed, related object ------------------ ");
 			if( typeof( callback ) === "string" )  {
+				// callback is a script, which moves arguments over one place...
 				o.wake().then( (thread)=>{
-					
-					thread.runFile( callback );
+					return thread.runFile( callback );
 				} );
 				opts(o);
 			}
@@ -785,8 +776,8 @@ function Entity(obj,name,desc ) {
 		, created: []
 		, owner : null 
 		, loaded: false
-		, has_value: false
-		, value: null
+		, has_state: false
+		, state: null
 		, name: name
 		, description: desc
 		, command: null
@@ -826,20 +817,18 @@ function Entity(obj,name,desc ) {
 
 var entityMethods = {
 		get container() { /*doLog( "Getting container:",this); */return this.within; }
-		, create(name, desc, cb, value) {
+		, create(name, desc, cb, state) {
 			//console.trace("Who calls create?  We need to return sandbox.entity?");
 			if (typeof desc === 'function') {
 				cb = desc; desc = null;
 			}
-			var this_ = this;
 			makeEntity(this, name, desc, (newo) => {
-				newo.value = value;
+				newo.state = state;
 				if (typeof cb === 'string') {
 					newo.sandbox.require(cb); // load and run script in entity sandbox
-
-					if (value) value(newo);
-				} else
-					if (cb) cb(newo) // this is a callback that is in a vm already; but executes on this vm instead of the entities?
+					cb = state;
+				} 
+				if (cb) cb(newo) // this is a callback that is in a vm already; but executes on this vm instead of the entities?
 			});
 			
 		}
@@ -868,9 +857,9 @@ var entityMethods = {
 		}
 		, getObjects(...args){ return getObjects(this, ...args) }
 		, get contents() { 
-			var refs = [];  t
-			his.contains.forEach( c=>refs.push(c.Λ.toString() ) );
-			console.log( "Returning refs:", refs );
+			var refs = []; 
+			this.contains.forEach( c=>refs.push(c.Λ.toString() ) );
+			//console.log( "Returning refs:", refs );
 			return refs; }
 		, get near() {
 			var result = [];
@@ -906,17 +895,20 @@ var entityMethods = {
 		}
 		, get nearObjects() {
 			var near = new Map();
-			var c = new Map();
+			let c = new Map();
+			//console.log( "Building nearObject List for:", this.name );
 			this.attached_to.forEach( e=>c.set(e.Λ.toString(),e.Λ.toString()) );
+
 			near.set("holding", c );
 			c = new Map();
 			this.contains.forEach( e=>{
+				//console.log( "This actually has contained? (contains?)", e.name );
 				if( "object" === typeof e )
 					c.set(e.Λ.toString(),e.Λ.toString())
 				else
 					c.set(e,e)
-			 } );
-			 near.set("contains", c );
+			} );
+			near.set("contains", c );
 			near.set("near", (function (on) {
 				var result = new Map();
 
@@ -938,9 +930,9 @@ var entityMethods = {
 			return near;
 		}
 		, assign: (object) => {
-			this.value = object;
+			this.state = object;
 			if (config.run.debug)
-				sanityCheck(object);
+				sanityCheck(state);
 		}
 		, attach(a) {
 			if( "string" === typeof a ) a = objects.get(a);
@@ -957,10 +949,8 @@ var entityMethods = {
 				a.attached_to.set(this.Λ.toString(), this);
 				this.attached_to.set(a.Λ.toString(), a);
 
-				if( this.thread )
-					this.thread.emit('attached', a.Λ);
-				if( a.thread )
-					a.thread.emit('attached', this.Λ);
+				this.emit('attached', a.Λ);
+				a.emit('attached', this.Λ);
 			}
 		}
 		, detach(a) {
@@ -973,65 +963,74 @@ var entityMethods = {
 					// both have to be attached to the third.
 					a.attached_to.delete(tΛ);
 					this.attached_to.delete(aΛ);
-					if( this.thread )
-						this.thread.emit('detached', aΛ);
-					if( a.thread )
-						a.thread.emit('detached', tΛ);				
+					this.emit('detached', aΛ);
+					a.emit('detached', tΛ);				
 					console.log( "Success detaching..." );
 					return true;
 				}
-			throw "objects are not attached: " + this.name + " & " + a.name;
+			//throw "objects are not attached: " + this.name + " & " + a.name;
 			return false;
 		}
 		, watch(a) {
-			a = objects.get( a );
-			console.log( this.name, " is watching:", a.name );
+			a = objects.get( a ) || a;
+			//console.trace( this.name, " is watching:", a.name );
 			if( a ) {
 				//console.log( "A has a sandbox?", a.sandbox );
+				if(0)
 				for( let method in a.sandbox ) {
-					//console.log( "Method to watch?", method );
+					console.log( "Method to watch?", method );
 					this.emit( "enable", [a.Λ, a.sandbox[method]] );
 				}
-				a.thread && a.watchers.set(this.Λ.toString(), this);
+				
+				this.thread && a.watchers.set(this.Λ.toString(), this);
 			}else {
 				console.log( "getting A for watch failed?", a)
 			}
 		}
 		, ignore(a) {
-			a = objects.get( a );
+			a = objects.get( a ) || a;
 			a && a.watchers && a.watchers.delete(this.Λ);
 		}
 		, insert(a) {
 			a.within = this;
-			if( this.thread )
-				this.thread.emit('stored', a.Λ );
-			this.contains.forEach( peer=>{peer = objects.get( peer );
-				if( peer.thread )
-					peer.thread.emit('joined', a.Λ );
+			this.emit('stored', a.Λ );
+			
+			this.contains.forEach( peer=>{
+				peer = objects.get(peer)||peer;
+				if( peer != this ) {
+					//console.log( "------- insert join notification to:", peer.name );
+					//peer = objects.get( peer );
+					peer.emit('joined', a.Λ );
+				}
 			});
-			this.contains.set( a.Λ.toString(), a.Λ.toString() );
-			if( a.thread )
-				a.thread.emit('placed', this.Λ );
+			this.contains.set( a.Λ.toString(), a );
+			a.emit('placed', this.Λ );
 		}
 		, rebase() {
 			// this removes an entity from space...
 			// it is no longer within
 			// it remains attached... so either
 			// the
+			//console.log( "Rebasing an object... (remove from room)", this.name, this.within.name, this.Λ )
 			const room = this.within;
 			if( room ){
-				room.contains.delete(this.Λ);
+				room.contains.delete(this.Λ.toString());
+				//console.log( "removing content", room.name, room.contains );
 				// tell room it lost something
-				if( room.thread )
-					room.thread.emit( "lost", this.Λ );
-				if( this.thread )
-					this.thread.emit('displaced', room.Λ );
+				room.emit( "lost", this.Λ );
 				// tell others in the room some parted the room.
 				// headed to?
-				room.contains.forEach( (id)=>{
-					const content = objects.get( id );
-					if( content.thread )
-						content.thread.emit( "parted", this.Λ );
+				room.contains.forEach( (content)=>{
+					
+					// tell all the contents that this has parted...
+					
+					// I wouldn't be in my own list near... 
+					if( content === this ) {
+						return;
+					}
+					_debug_rebase && doLog( "content:", content );
+					
+					content.emit( "parted", this.Λ );
 				})
 				this.within = null;
 			}else {
@@ -1102,10 +1101,11 @@ var entityMethods = {
 		, enter( newRoom ){
 			newRoom = objects.get( newRoom );
 			this.rebase(); // free from container
+			console.log( "rebased 'this'", this.name, newRoom.name );
 			newRoom.insert( this );  // put in new container
 		}
 		, grab(a) {
-			doLog( "THing:", this, "A:", a );
+			//doLog( "THing:", this.name, "A:", a.name );
 			var grabobj = ( "string" === typeof a && objects.get( a ) ) || objects.get( a.entity.Λ.toString() );
 			if( grabobj ) {
 				if( !grabobj.within ) {
@@ -1115,6 +1115,22 @@ var entityMethods = {
 				this.attach( grabobj );
 			}
 		}
+		, emit( event, data ) {
+			const this_ = this;
+			//console.log( "emitting an event:", this.name, event, data)
+			if( data instanceof idMan.keyRef )
+				data = data.toString();
+			// drop the promise result, there is no then or catch.
+			if( this.thread && this.thread.worker ) 
+				this.thread.post( { op:"on", on:event, args:data });
+			//console.log( "this watchers:", this.watchers.size );
+			this.watchers.forEach( watcher=>{
+				//console.log( 'Sending event', event, 'about', this_.name, "to", watcher.name, "id:", this_.Λ )
+				// can't be a watcher without being a thread.
+				watcher.thread.post( {op:"on",Λ:this_.Λ.toString(),on:event,args:data} )
+			})
+	   }
+
 		, hold(a) {
 			//doLog( "THing:", this, "A:", a );
 			var grabobj = ( "string" === typeof a && objects.get( a ) ) || objects.get( a.entity.Λ.toString() );
@@ -1124,6 +1140,7 @@ var entityMethods = {
 		}
 		, drop(a) {
 			var outer = this.within || (outer = findContained(this).parent );
+			console.log( '---------------------------- REMOVE CONTENT');
 			var grabobj = ( "string" === typeof a && objects.get( a ) ) || objects.get( a.entity.Λ.toString() );
 			//doLog( "Core:Drop Command", grabobj, this.detach );
 			if( this.detach( grabobj ) ) {
@@ -1149,12 +1166,19 @@ var entityMethods = {
 		}
 		, store(a) {
 			const grabobj = ( ( "string" === typeof a ) && objects.get( a ) ) || a;
-			if( this.owns( grabobj ) ) {
-				if( this.detach( grabobj ) ) {
-					this.insert( grabobj );
-				}
-			}else 
-				throw new Error( "Not allowed to store items you don't own.");
+			console.log( "storing a in this", grabobj.name, this.name );
+			//if( this.owns( grabobj ) ) 
+			try {
+			{
+				this.detach( grabobj );
+				this.insert( grabobj );
+			}
+		}catch(err) {
+			console.log( "catch error in store:", err );
+		}
+			//else 
+			//	throw new Error( "Not allowed to store items you don't own.");
+			console.log( "stored?" );
 		}
 		, run(file,command) {
 			if( !command ) throw new Error( " PLEASE UPDATE USAGE");
@@ -1306,7 +1330,7 @@ var entityMethods = {
 			//console.log( "encoded mods with stringifier? or just raw?", !!strngfr, mods );
 			return '{Λ:i"' + this.Λ.toString()
 				+ '",V:"' + this.V
-				+ '",value:' + (this.value && this.value.toString())
+				+ '",state:' + (this.state && this.state.toString())
 				+ ',name:"' + (this.name)
 				+ '",description:"' + (this.description)
 				+ '",within:' + wthn
@@ -1329,7 +1353,7 @@ var entityMethods = {
 				, created_by: this.created_by.Λ
 				, sandbox : this.sandbox
 				, _module : this._module
-				, value : this.value
+				, state : this.state4
 			};
 			return rep;
 		}
@@ -1409,7 +1433,7 @@ Entity.fromString = function(s) {
 			}
 			objects.delete( oldId );
 			objects.set(o.Λ.toString(), o);
-			o.thread.emit( "rekey", o.Λ );
+			o.emit( "rekey", o.Λ );
 		})
 		objects.set(o.Λ.toString(), o);
 
@@ -1418,12 +1442,10 @@ Entity.fromString = function(s) {
 		if (!o.within) {
 			//o.attached_to.set(o.Λ.toString(), o);
 		}else {
-			if( o.within.thread ) {
-				o.within.thread.emit("created", o.Λ);
-				o.within.thread.emit("inserted", o.Λ);
-			}
+			o.within.emit("created", o.Λ);
+			o.within.emit("inserted", o.Λ);
 		}
-		//o.within.contains.forEach(near => (near !== o) ? near.thread.emit("joined", o) : 0);
+		//o.within.contains.forEach(	=> (near !== o) ? near.thread.emit("joined", o) : 0);
 
 		if (!callback)
 			throw ("How are you going to get your object?");
@@ -1644,7 +1666,7 @@ function findContained(obj, checked) {
 	for( let content of attached ) {
 		content = content[1];
 		if (checked[content.Λ]) continue;
-		doLog(  "check for within:", content.name);
+		_debug_look && doLog(  "check for within:", content.name);
 		if (content.within) return { parent:content.within, at:content, from:null };
 		var result = findContained(content, checked);
 		checked[content.Λ] = true;
@@ -1780,7 +1802,7 @@ function getEntity(ref) {
 function sanityCheck(object) {
 	var s = JSOX.stringify(object);
 	var t = object.toString();
-	doLog(`json is ${s}`);
+	doLog(`jsox is ${s}`);
 	doLog(`toString is ${t}`)
 	var os = JSOX.parse(s);
 	if (os !== object) {

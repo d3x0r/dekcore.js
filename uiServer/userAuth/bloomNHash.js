@@ -1269,10 +1269,10 @@ BloomNHash.prototype.get = function( key ) {
 	getting = true;
 	if( !this.root ) return Promise.resolve( undefined );
 	const result = {};
-	doLog( "userAuth Doit Get:", this, key );
-	doLog( "this.root is :", this.root );
+	//doLog( "userAuth Doit Get:", this, key );
+	//doLog( "this.root is :", this.root );
 	const doit = (root)=>{// thisless
-		doLog( "Map resulted:", root, new Error() );
+		//doLog( "Map resulted:", root, new Error() );
 		//this.root = root; 
 		return this.root.lookupFlowerHashEntry( key, result ).then( (obj)=>{
 			getting = false;

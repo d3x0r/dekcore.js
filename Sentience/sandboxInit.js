@@ -97,8 +97,8 @@ sandbox.sandbox = sandbox;
 
 
 process.on('unhandledRejection', err=>{
-	sack.log( util.format( "Unhandled Rejection", err ) );
+	sack.log( util.format( "sandboxInit.js:Unhandled Rejection", err, '\n'+new Error() ) );
 } );
 process.on('unhandledException', err=>{
-	sack.log( util.format( "Unhandled Exception", err ) );
+	sack.log( util.format( "sandboxInit.js:Unhandled Exception", err, '\n'+new Error() ) );
 } );

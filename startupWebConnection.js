@@ -53,7 +53,7 @@ return require("sack.vfs" ).then(sack=>{
 			let lastTick = Date.now();
 			function tick() {
 				const now = Date.now();
-				if( ( lastTick - now ) > 30000 ){
+				if( ( now - lastTick ) > 30000 ){
 					lastTick = now;
 					ws.ping();
 				}
