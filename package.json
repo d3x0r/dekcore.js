@@ -13,8 +13,7 @@
   "dependencies": {
     "sack.vfs": "1.0.1006"
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/d3x0r/dekcore.js.git"
