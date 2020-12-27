@@ -2,9 +2,9 @@
 
 MUD enironment/JS REPL.
 
-connect to port specified.   Use commands.
-
 Internally Entities are created and tracked by the core.
+
+Sort of distributed shared environment with scriptable objects; free hosting has no persistent storage.
 
 [Heroku Deployment](https://dekware.herokuapp.com/) 
 
@@ -30,10 +30,24 @@ The basic commands `/create <entity>` will create a thing called the name provid
  - /attach <thing> [to] <other thing> - for two objects which are currently held by (attached to) the current object, attach the first item to the second item, leaving the second item as the root entity. `to` is an option preposition.
  - /detach <thing> [from] <other thing> - for an object and another object which is also attached to it, detach the <thing> from the other thing;  `from` is an optional preposition.
   
+## Screenshot
+
+![Screen Shot](screenshot.png)
+
 
 ## Running
 
 (Tenative, in-dev)
+
+heroku start?
+```
+heroku start
+```
+
+npm start?
+```
+npm start
+```
 
 This has a 2 stage startup; the first run intiializes some identifiers, which are required to reload.
 
