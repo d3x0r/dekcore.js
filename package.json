@@ -11,7 +11,7 @@
     "test": "node test.js"
   },
   "dependencies": {
-    "sack.vfs": "latest"
+    "sack.vfs": "1.0.1006"
   },
   "devDependencies": {
   },
