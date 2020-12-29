@@ -84,12 +84,20 @@ module.exports = exports = {
 		//console.trace( "storing into : ", filename, object, callback );
 		if( typeof( filename ) == 'string' ) {
 			 fileName = filename
-			 return new Promise( (res,rej)=>fc_local.root.open( fileName )
-				 .then( file=>file.write( object )
+			 return new Promise( (res,rej)=> {
+				return fc_local.root.has(fileName ).then( has=>{
+					let file = null;
+					if( has )
+						file = fc_local.root.open( fileName )
+					else 
+						file = fc_local.root.create( fileName )
+
+					return file.then( file=>file.write( object )
 						.then( res )
 						.catch( rej ) 
-					).catch(rej)
-				);
+						).catch(rej)
+					} );
+				} );
 		} else {
 			return new Promise( (res,rej)=>fc_local.store.put( filename )
 				.then( d=>{ console.log( "put filename, callback.." );return (callback&&callback(d),res(d))} ).catch(rej) );
@@ -146,7 +154,12 @@ module.exports = exports = {
 		var result;
 		var fileName = filename
 		return new Promise( (res,rej)=>{
-			return fc_local.root.open( fileName ).then( file=>file.read().then( res ).catch( rej ) ).catch(rej);
+			return fc_local.root.has( fileName ).then ( has=>{
+				if( has ) 
+					return fc_local.root.open( fileName )
+						.then( file=>file.read().then( res ).catch( rej ) ).catch(rej);
+				else res( null );
+			} );
 		})
 	},
 	mkdir: mkdir,
@@ -207,8 +220,6 @@ function GetObjectFilename( oid )
 				leader =  ( oid.contained.Λfspath = oid.contained._.substring( 0, 5 ) + "/" + oid.contained._.substring( 5,10 ) + "/" +  oid.contained._.substring( 10 ) )
 			leader += ".content/";
 		}
-	//if( oid )
-	//    oid.fs
 	console.log( "object filename from: ", oid );;
 	var char =  leader.join( oid._.substring( 0, 5 ) + "/" + oid._.substring( 5,10 ) + "/" +  oid._.substring( 10 ));
 	console.log( "joined filename:", char);

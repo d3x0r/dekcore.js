@@ -149,7 +149,7 @@ async function loadConfig(path) {
 
 	function loadRun(object) {
 		// if there's an old config object...
-		//console.trace( "Load Running config:", object );
+		console.trace( "Load Running config:", object );
 		if( object ) {
 			config.run.Λ = object.Λ;
 		}
