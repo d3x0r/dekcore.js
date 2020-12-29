@@ -1,7 +1,7 @@
-//const resolve = require('@rollup/plugin-node-resolve')
+const resolve = require('@rollup/plugin-node-resolve')
 //const commonjs = require('@rollup/plugin-commonjs')
-import {terser} from 'rollup-plugin-terser'
-import gzipPlugin  from 'rollup-plugin-gzip'
+//import {terser} from 'rollup-plugin-terser'
+//import gzipPlugin  from 'rollup-plugin-gzip'
 //const pkg = require('./package.json')
 
 export default [
@@ -23,8 +23,8 @@ export default [
             format: 'esm',
         },
         plugins: [
-            terser(),
-				gzipPlugin() ,
+//            terser(),
+//				gzipPlugin() ,
         ],
     }
 ]

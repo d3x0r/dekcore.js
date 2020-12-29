@@ -2,7 +2,7 @@
 "use strict";
 const _debug = false;
 
-import {JSOX} from "./JSOX.js"
+import {JSOX} from "jsox"
 import {regenerator,generator,short_generator} from "./id_generator.js"
 
 const idGen = { generator:generator,regenerator:regenerator }
