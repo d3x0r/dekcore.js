@@ -8,7 +8,7 @@ import cm3 from "./codemirror/addon/search/searchcursor.js"
 import cm4 from "./codemirror/addon/search/match-highlighter.js"
 import cm5 from "./codemirror/mode/javascript/javascript.js"
 
-import {popups} from "./popups.mjs"
+import {popups} from "@d3x0r/popups"
 
 
 {

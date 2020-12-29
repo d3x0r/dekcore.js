@@ -1,5 +1,5 @@
 
-import {popups} from "./popups.mjs";
+import {popups} from "@d3x0r/popups";
 
 import {JSOX} from "./jsox.mjs";
 
