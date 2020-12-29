@@ -1,5 +1,5 @@
 {
-  "name": "dekcore",
+  "name": "@d3x0r/dekcore",
   "version": "0.1.0",
   "description": "Dekware Heroku deploy",
   "engines": {
