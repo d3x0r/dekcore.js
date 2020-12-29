@@ -11,9 +11,10 @@
     "test": "node test.js"
   },
   "dependencies": {
-    "sack.vfs": "1.0.1006"
-  },
-  "devDependencies": {
+    "@d3x0r/brainboard": "latest",
+    "@d3x0r/flatland": "latest",
+    "@d3x0r/popups": "^1.0.0",
+    "sack.vfs": "latest"
   },
   "repository": {
     "type": "git",
@@ -24,5 +25,8 @@
     "sack.vfs",
     "operting system"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^11.0.1"
+  }
 }

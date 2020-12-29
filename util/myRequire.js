@@ -154,7 +154,7 @@ function doRequire( file ) {
         
 		//console.warn( "options ", opts );
 		_debug&&console.warn( "DO HTTP REQUIRE:", file );
-if( true ) {        
+		
 		var res = https.get( opts );
                 if( res.error ) {
 			thisModule.loaded = true;
@@ -193,52 +193,6 @@ if( true ) {
 			_debug && console.trace( "loaded..." );
 			thisModule.loaded = true;
 		}
-}
-if( false) {        
-		https.get( opts,
-			(res) => {
-			const statusCode = res.statusCode;
-			const contentType = res.headers['content-type'];
-			let error;
-                        //console.warn( "http get response happened..." );
-			if (statusCode !== 200) {
-				error = new Error(`Request Failed.\n` +
-						`Status Code: ${statusCode}` + JSON.stringify( opts ) );
-			} else if (/^text\/javascript/.test(contentType)) {
-				evalCode = true;
-			} else if (/^application\/javascript/.test(contentType)) {
-				evalCode = true;
-			} else if (/^application\/json/.test(contentType)) {
-				evalJson = true;
-			}
-			else {
-				error = new Error(`Invalid content-type.\n` +
-								`Expected application/json or application/javascript but received ${contentType}`);
-        
-			}
-			if (error) {
-				console.warn(error.message);
-				// consume response data to free up memory
-				res.resume();
-				return;
-			}
-        
-			res.setEncoding('utf8');
-			res.on('data', (chunk) =>{ thisModule.rawData += chunk} );
-			res.on('end', () => {
-				console.warn( "http request ending" );
-				//console.trace( "loaded..." );
-				sack.Λ();
-				thisModule.loaded = true;
-			});
-		}).on('error', (e) => {
-			console.trace(`Got error in ${file}  ${e.message}`, e);
-		});
-		while(!thisModule.loaded) {
-			//console.warn( "waiting to block until http request finishes", file )
-			sack.Δ();
-		}
-}
 	}
 
 	var prior = runningModule;
