@@ -14,6 +14,7 @@
     "@d3x0r/brainboard": "latest",
     "@d3x0r/flatland": "latest",
     "@d3x0r/popups": "^1.0.0",
+    "jsox": "^1.2.105",
     "sack.vfs": "latest"
   },
   "repository": {
