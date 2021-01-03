@@ -6,9 +6,9 @@ const resolve = require('@rollup/plugin-node-resolve')
 module.exports = [
     // ES6 Modules Non-minified
     {
-        input: 'console.mjs',
+        input: 'flatland.js',
         output: {
-            file: 'build.js',
+            file: 'flatland-build.js',
             format: 'esm',
         },
         plugins: [
