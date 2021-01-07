@@ -13,13 +13,13 @@
   "dependencies": {
     "@d3x0r/brainboard": "latest",
     "@d3x0r/flatland": "latest",
-    "@d3x0r/popups": "^1.0.0",
-    "jsox": "^1.2.105",
+    "@d3x0r/popups": "latest",
+    "jsox": "latest",
     "sack.vfs": "latest"
   },
-    "sack.vfs": "1.0.1006"
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^11.0.1"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/d3x0r/dekcore.js.git"
@@ -29,8 +29,5 @@
     "sack.vfs",
     "operting system"
   ],
-  "license": "MIT",
-  "devDependencies": {
-    "@rollup/plugin-node-resolve": "^11.0.1"
-  }
+  "license": "MIT"
 }
