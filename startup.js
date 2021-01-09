@@ -40,7 +40,7 @@ else {
   }).then( (a)=>{
     console.log( "Already have http moose?");
   });
-  
+
   //create( "Command And Control-HTTP", "http MOOSE console", "webShell/shellServer.js" );
 
   // these are private To MOOSE anyway... so they're not a lot of good?

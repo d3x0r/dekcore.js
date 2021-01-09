@@ -96,17 +96,24 @@ function createSpawnServer( sandbox ) {
 	} );
 	let counter = 0;
 	server.onaccept( async function (conn) {
-		sack.log( util.format("Connection received with : ", conn.headers['Sec-WebSocket-Protocol'], " path:", conn.url) );
+		const protocol = conn.headers['Sec-WebSocket-Protocol'];
+		
+		//sack.log( util.format("Connection received with : ", conn.headers['Sec-WebSocket-Protocol'], " path:", conn.url) );
 		conn.block(); // need to do this before async returns.
+		
 		create( await name+":"+counter++, await description).then( (e)=>{
 			//sack.log( "created new entity... waking it up...")
-			
-			e.wake(false).then( ()=>{
-				//sack.log( "Tell it to require web connection startup")
-				e.require(  "./startupWebConnection.js" ).then( ()=>{
-					conn.post( e.Λ );
+			if( protocol === "EntityControl" ) {
+				e.wake(false).then( ()=>{
+					//sack.log( "Tell it to require web connection startup")
+					e.require(  "./startupWebConnection.js" ).then( ()=>{
+						conn.post( e.Λ );
+					})
 				})
-			})
+			} else if( protocol === "EntityRemote" )	{
+				conn.post( e.Λ ); // throw to the core
+				e.wake(true); // allow core entity to post direct
+			}
 		} );
 	} );
 
