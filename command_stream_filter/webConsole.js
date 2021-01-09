@@ -100,7 +100,8 @@ function createSpawnServer( sandbox ) {
 		conn.block(); // need to do this before async returns.
 		create( await name+":"+counter++, await description).then( (e)=>{
 			//sack.log( "created new entity... waking it up...")
-			e.wake().then( ()=>{
+			
+			e.wake(false).then( ()=>{
 				//sack.log( "Tell it to require web connection startup")
 				e.require(  "./startupWebConnection.js" ).then( ()=>{
 					conn.post( e.Λ );

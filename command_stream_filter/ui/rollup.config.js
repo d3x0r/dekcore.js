@@ -15,6 +15,16 @@ module.exports = [
             resolve.nodeResolve(),
         ],
     },
+    {
+        input: 'remote-console.mjs',
+        output: {
+            file: 'buildRemote.js',
+            format: 'esm',
+        },
+        plugins: [
+            resolve.nodeResolve(),
+        ],
+    },
     // ES6 Modules Minified
 	/*
     {

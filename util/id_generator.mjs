@@ -1,10 +1,10 @@
 "use strict";
 
-import {SaltyRNG as SRG} from "./salty_random_generator.mjs";
+import {SaltyRNG} from "./salty_random_generator.mjs";
 import {u8xor} from "./u8xor.mjs";
 
-const RNG = (SRG).SaltyRNG( (saltbuf)=>saltbuf.push( new Date().toISOString() ), { mode:1 } );
-const RNG2 = (SRG).SaltyRNG( getSalt2, { mode:1 } );
+const RNG = SaltyRNG( (saltbuf)=>saltbuf.push( new Date().toISOString() ), { mode:1 } );
+const RNG2 = SaltyRNG( getSalt2, { mode:1 } );
 
 
 var salt = null;
@@ -107,7 +107,7 @@ function sign( msg ) {
 		var tmp = new Uint8Array(32);
 		//memcpy( nextSalt, *buf, buf.length() );
 		if( !signEntropy ) {
-			signEntropy = SRG.SaltyRNG( null );
+			signEntropy = SaltyRNG( null );
 			signEntropy.initialEntropy = null;
 		}
 
@@ -138,7 +138,7 @@ function sign( msg ) {
 
 function verify ( msg, id  ) {
 		if( !signEntropy ) {
-			signEntropy = SRG.SaltyRNG( null );
+			signEntropy = SaltyRNG( null );
 			signEntropy.initialEntropy = null;
 		}
 		signEntropy.reset();
@@ -346,6 +346,6 @@ export {dexor}
 export {txor}
 
 export {makeXKey as xkey };
-export {makeu16Key as ukey };
+export {makeU16Key as ukey };
 
 

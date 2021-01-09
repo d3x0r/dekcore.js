@@ -6,22 +6,18 @@ const _debug_run = false;
 const _debug_look = false;
 const _debug_rebase = false;
 
-const events = require('events');
-const url = require( 'url' );
+const process = require('process'); // cwd for require
 const cp = require( 'child_process');
-const fs = require('fs');
 const util = require('util');
-const process = require('process');
 const sack = require( "sack.vfs" );
-const vfs = require('sack.vfs');
 const idMan = require( '../id_manager.js');
-const vol = vfs.Volume();
+const vol = sack.Volume();
 const JSOX = sack.JSOX;
 
 //JSOX.registerToJSOX( "entity", Entity,
 
-function EntityToJSOX (){
-	const r = this.toString();
+function EntityToJSOX (s){
+	const r = this.toString(s);
 	return r
 }
 
@@ -134,7 +130,7 @@ config.start( ()=>{
 })
 function doLog(...args){
 	var s = util.format(...args);
-	vfs.log('Entity:'+s);
+	sack.log('Entity:'+s);
 	console.log(s);
 }
 
@@ -153,7 +149,6 @@ var entity = module.exports = exports = {
 const wake = require('../Sentience/wake');
 //const idMan = require('../id_manager.js');
 
-const ee = events.EventEmitter;
 var objects = new Map();
 var remotes = new WeakMap();
 var childPendingMessages = new Map();
@@ -300,65 +295,6 @@ function sandboxWSS( opts ) {
 //         if( moved contained ) event rebase( a)
 //          if( moved contained ) event newroot(a) to container
 //    returns e
-
-
-//
-
-const volOverride = `(function(vfs, dataRoot) {
-	vfs.mkdir = vfs.Volume.mkdir;
-	vfs.Volume = (function (orig) {
-		// entities that want to use the VFS will have to be relocated to their local path
-		return function (name, path, v, a, b) {
-			//doLog("what's config?", config);
-			if( name === undefined ) 
-				return orig();
-			var privatePath = dataRoot + "/" + config.run.Λ + "/" + path;
-			//doLog("Volume overrride called with : ", name, dataRoot + "/" + config.run.Λ + "/" + path, orig);
-			//doLog("Volume overrride called with : ", a, b );
-			try {
-				return orig(name, privatePath, v, a, b);
-			} catch(err) {
-				doLog( "limp along?" );
-			}
-		}
-	})(vfs.Volume);
-	var tmp = vfs.Sqlite.op;
-
-	vfs.Sqlite = (function(orig) {
-		return function (path) {
-			//doLog("what's config?", config);
-			if( path[0] === "$" ) return orig( path );
-			if( path.includes( "." ) ) {
-				var privatePath = dataRoot + "/" + config.run.Λ + "/" + path;
-				if( dataRoot !== "." ) {
-					var zz1 = privatePath.lastIndexOf( "/" );
-					var zz2 = privatePath.lastIndexOf( "\\\\" );
-					var pathPart = null;
-					if( zz1 > zz2 )
-						pathPart = privatePath.substr( 0, zz1 )
-					else
-						pathPart = privatePath.substr( 0, zz2 )
-					doLog( "Make directory for sqlite?", pathPart, privatePath )
-					vfs.mkdir( pathPart );
-				}
-				doLog("Sqlite overrride called with : ", dataRoot + "/" + config.run.Λ + "/" + path);
-				try {
-					return orig( privatePath );
-				} catch(err) {
-					doLog( "limp along?", err );
-				}
-			}
-			else return orig( path );
-		}
-	})(vfs.Sqlite);
-	vfs.Sqlite.op = tmp;
-})`
-
-//config.start( ()=>eval( volOverride )( vfs, config.run.defaults.dataRoot ) )
-
-
-
-//var all_entities = new WeakMap();
 
 var drivers = [];
 
@@ -673,7 +609,7 @@ function makeEntity(obj, name, description, callback, opts) {
 				var root = cache.closure.filename;
 				try {
 					//doLog( "closure recover:", root, cache.closure )
-					var file = fs.readFileSync(root, { encoding: 'utf8' });
+					var file = vol.read( root ).toString();
 				} catch (err) {
 					doLog("File failed... is it a HTTP request?", src, root, err);
 					return undefined;
@@ -771,6 +707,9 @@ function Entity(obj,name,desc ) {
 		, V: null
 		, within: obj
 		, attached_to: new Map()//[]
+		, config : {
+			hasSocket : false,
+		}
 		, contains: new Map()//[]
 		, created_by: null
 		, created: []
@@ -810,7 +749,6 @@ function Entity(obj,name,desc ) {
 	this.created_by.created.push( this );
 
 	if( !exports.theVoid ) theVoid = exports.theVoid = this;
-	//Object.assign(o, ee.prototype); ee.call(o);
 	//return o;
 }
 
@@ -1224,10 +1162,16 @@ var entityMethods = {
 			//doLog( "Requiring for something:", src )
 			return  sandboxRequire( this, src );
 		}
-		, wake() {
+		, wake( socket ) {
 			if( !this.thread ) {
-				return wake.WakeEntity( this );
-			}
+				if( socket ) 
+				   return sack.WebSocket.Thread.accept(this.Λ.toString(),async (id,ws)=>{ 
+						// should validate the the ID is the expected ID.
+						return wake.WakeEntity( this, true, ws );
+					} );
+				else
+					return wake.WakeEntity( this, false, null );
+			} 
 			return Promise.resolve(this.thread);
 		}
 		, idGen() {
@@ -1239,9 +1183,9 @@ var entityMethods = {
 				});
 			})
 		}
-		, toString() {
+		, toString(strngfr) {
 			var attached = null;
-			var strngfr = sack.JSOX.stringifierActive;
+			//var strngfr = sack.JSOX.stringifierActive;
 			if( this.attached_to ) {
 				this.attached_to.forEach((member) => { 
 					let newVal;
@@ -1476,7 +1420,7 @@ exports.reloadAll = function( ) {
 						//console.log( "References?", JSOX.stringify( o._module ) );
 						//console.log( "References2?", JSOX.stringify( o._module .includes) );
 
-						wake.WakeEntity( o, false ).then( thread=>{
+						wake.WakeEntity( o, o.config.hasSocket, null ).then( thread=>{
 							const thisModule = o._module;
 							console.log( "fill cache with module's code?")
 							//console.log( "Module had some script....", thisModule.src, requireCache, thisModule.filename );
@@ -1814,11 +1758,10 @@ function sanityCheck(object) {
 
 
 function saveConfig(o, callback) {
-	//if( !fs.exists( 'core') )
 	console.trace( "********SaveConfig Volume (FIXME)" );
 	return;
 	if (!("vol" in o))
-		o.vol = vfs.Volume(null, config.run.defaults.dataRoot + "/" + o.Λ);
+		o.vol = sack.Volume(null, config.run.defaults.dataRoot + "/" + o.Λ);
 	if( o.sandbox )		
 		o.vol.write(JSOX.stringify(o.sandbox.config));
 }
@@ -1831,7 +1774,7 @@ function loadConfig(o) {
 	console.trace( "********LoadConfig Volume (FIXME)" );
 	return;
 	if (!("vol" in o))
-		o.vol = vfs.Volume(null, config.run.defaults.dataRoot + "/" + o.Λ);
+		o.vol = sack.Volume(null, config.run.defaults.dataRoot + "/" + o.Λ);
 	{
 		var data = o.vol.read("config.json");
 		if (data) {

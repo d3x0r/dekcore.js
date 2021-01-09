@@ -26,9 +26,7 @@ const disk = sack.Volume();
 const startupInitCode = disk.read( __dirname + "/sandboxInit.js" ).toString();
 const startupPrerunCode = disk.read( __dirname + "/sandboxPrerun.js" ).toString();
 
-
-
-function WakeEntity( e, noWorker ) {
+function WakeEntity( e, noWorker, socket ) {
 	var runId = 0;
 	const pendingRuns = [];
 
@@ -206,10 +204,16 @@ function WakeEntity( e, noWorker ) {
 
 	const thread = {
 		worker : null
+		, socket : socket
 		, post(msg) {
 			//thread.worker.stdin.write( JSOX.stringify(msg) );
-			_debug_commands_send && console.trace( "Post run:", msg );
-			thread.worker.postMessage( msg );
+			if( socket ) {
+				_debug_commands_send && console.trace( "Post run:", msg );
+				thread.socket.send( msg );
+			}else {
+				_debug_commands_send && console.trace( "Post run:", msg );
+				thread.worker.postMessage( msg );
+			}
 		}
 		, runFile(code) {
 			let code_;
@@ -273,17 +277,47 @@ function WakeEntity( e, noWorker ) {
 		}
 	}
 	e.thread = thread;
-	if( wt && !noWorker ) {
+	if( socket ) {
+		_debug_thread_create && console.trace( "Waking up entity:", e.name, e.Λ, e.thread )
+		// this is the thread that should be this...
+		// so don't create a worker thread again. (tahnkfully worker_thread fails import of second worker_threads.)
+		//socket.accept()
+
+		socket.on("message",processMessage);
+		const invokePrerun = `{op:start,code:${JSON.stringify('const Λ=' + JSON.stringify(e.Λ.toString()) + ";" 
+				+ startupPrerunCode + invokePrerun)}}`
+		socket.send( invokePrerun );
+
+
+	}
+	var resolveThread;
+
+	if( socket ) {
+		const send_ = thread.socket.send.bind(thread.socket);
+		function mySend(msg) {
+			if( "object" === typeof msg ) {
+				msg = JSOX.stringify( msg );
+			}
+			send_( msg );
+		}
+		thread.socket.send = mySend;
+		thread.socket.on("message",processMessage);
+		thread
+		return new Promise( (res,rej)=>{
+			resolveThread = res;
+		})
+
+	}
+	if( wt && !noWorker && !socket ) {
+
 		_debug_thread_create && console.trace( "Waking up entity:", e.name, e.Λ, e.thread )
 		// this is the thread that should be this...
 		// so don't create a worker thread again. (tahnkfully worker_thread fails import of second worker_threads.)
 		const invokePrerun = `{vm.runInContext( ${JSON.stringify(startupPrerunCode)}, sandbox, {filename:"sandboxPrerun.js"});}`
 
-		//console.log( "Wanting to remount ...", fc.cvol  )
-
 		fc.cvol.mount(e.Λ.toString()); 
-	
-	thread.worker = new wt.Worker( 'const Λ=' + JSON.stringify(e.Λ.toString()) + ";" 
+			
+		thread.worker = new wt.Worker( 'const Λ=' + JSON.stringify(e.Λ.toString()) + ";" 
 			+ 'Λ.maker=' + JSON.stringify(e.created_by.Λ.toString()) + ";" 
 			+ startupInitCode
 			+ invokePrerun
@@ -295,7 +329,6 @@ function WakeEntity( e, noWorker ) {
 				stdout:true,
 			})
 		thread.worker.on("message",processMessage);
-		var resolveThread;
 
 		thread.worker.stdout.on('data', (chunk)=> {
 			( (string)=>{
