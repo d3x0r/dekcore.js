@@ -11,6 +11,9 @@ module.exports = [
             file: 'build.js',
             format: 'esm',
         },
+			external: [
+				/\.\/codemirror\/.*/
+			],
         plugins: [
             resolve.nodeResolve(),
         ],
@@ -21,6 +24,9 @@ module.exports = [
             file: 'buildRemote.js',
             format: 'esm',
         },
+			external: [
+				/\.\/codemirror\/.*/
+			],
         plugins: [
             resolve.nodeResolve(),
         ],
