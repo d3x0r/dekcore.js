@@ -1,11 +1,10 @@
 
+import {u8xor} from "../util/u8xor.mjs"
 import * as idGen from "../util/id_generator.mjs";
-
+import {JSOX} from "jsox";
 //module.exports = prerun;
-export default 
-
-//prerun( ws );
-function prerun(ws) {
+export {prerun};
+export default function prerun(Λ,ws) {
 
 const _debugPaths = false;
 const _debug_commands = false;
@@ -13,7 +12,7 @@ const _debug_requires = false;
 const _debug_command_input = false;
 const _debug_command_post = _debug_commands || false;
 const _debug_command_run = _debug_commands || false;
-const __setTimeout = _setTimeout;
+const __setTimeout = setTimeout;
 // debug spcificall the get near command.... 
 const _debug_near = false;
 
@@ -27,9 +26,9 @@ const id = idGen.short_generator;
 //const { getEntity } = require('../Entity/entity.js');
 
 const builtinModules = [];
-builtinModules.require = require;
+//builtinModules.require = require;
 //const disk = sack.Volume();
-const JSOX = sack.JSOX;
+//const JSOX = sack.JSOX;
 
 const coreThreadEventer = ws;
 
@@ -54,7 +53,7 @@ var eid = 0;
 let timerId = 0; // used to uniquely identify timers
 let myName = 'unnamed';
 const objects = new Map();
-const self = this;
+const self = ws;
 const entity = makeEntity(Λ);
 //console.log( "This is logged in the raw startup of the sandbox:", Shell );
 
@@ -434,7 +433,11 @@ function makeEntity(Λ) {
 						return codeStack[result].result
 					return result;
 				})
-				.catch(err => sandbox.io.output("sandboxPrerun:require error:",(err)));
+				.catch(err => {
+						console.log( "sandboxPrerun:require error:",(err)) ;
+						/// logs into server....
+						//sandbox.io.output("sandboxPrerun:require error:",(err))
+				});
 		},
 		idMan: {
 			//sandbox.require( "id_manager_sandbox.js" )
@@ -503,7 +506,6 @@ var required = [];
 var fillSandbox = {
 	Λ: Λ
 	, entity: entity
-	, wsThread: sack.WebSocket.Thread
 	, waiting: []
 	//, module: { paths: [codeStack.length ? codeStack[codeStack.length - 1].file.path : module.path], parent: true }
 	//, Function : Function
@@ -536,8 +538,6 @@ var fillSandbox = {
 	}
 	, async require(args, path) {
 		_debug_requires && doLog("This is a thread that is doing a require in itself main loop", args, path, new Error().stack);
-		if (args === "sack") return sack;
-		if (args === "sack.vfs") return sack;
 		var builtin = builtinModules.find(m => args === m);
 		if (builtin) {
 			doLog("Including native node builtin module:", args);
@@ -578,12 +578,6 @@ var fillSandbox = {
 				console.log("Unhandled Require result:", ex, args );
 			}
 		}).catch(err => doLog("Require failed:", err));
-	}
-	, process: process
-	, _process: {
-		stdout: process.stdout,
-		stdin: process.stdin,
-		x: "not process"
 	}
 	//, Buffer: Buffer
 	, async create(a, b, c) {
@@ -643,7 +637,7 @@ var fillSandbox = {
 		filename: "internal"
 		, file: "memory://"
 		, parent: null
-		, paths: [module.path + "/.."]
+		, paths: ["."]
 		, exports: {}
 		, loaded: false
 		, rawData: ''
@@ -759,12 +753,12 @@ var fillSandbox = {
 	}
 	, emit(event, ...args) {
 		_debug_event_input && doLog("Emitting event(or would):", event )
-		if (event in sandbox.events) {
-			sandbox.events[event].forEach((cb) => cb(...args));
+		if (event in self.events) {
+			self.events[event].forEach((cb) => cb(...args));
 		}
 	}
 	, ing(event, ...args) {
-		if (event in sandbox.events) {
+		if (event in self.events) {
 
 		}
 	}
@@ -1041,7 +1035,7 @@ function finishFill(sandbox) {
 	sandbox.addListener = sandbox.on;
 	sandbox.removeListener = sandbox.off;
 	sandbox.removeAllListeners = (name) => {
-		Object.keys(sandbox.events).forEach(event => delete sandbox.events[event]);
+		Object.keys(self.events).forEach(event => delete sandbox.events[event]);
 	}
 	sandbox.io.addInterface = (a, b, c) => addDriver(self, a, b, c);
 
@@ -1111,7 +1105,7 @@ finishFill(fillSandbox);
 
 Object.getOwnPropertyNames(fillSandbox).forEach(function (prop) {
 	var descriptor = Object.getOwnPropertyDescriptor(fillSandbox, prop);
-	Object.defineProperty(this, prop, descriptor);
+	Object.defineProperty(ws, prop, descriptor);
 });
 
 
@@ -1122,19 +1116,6 @@ function initStorage() {
 const storedObjects = new WeakMap();
 //const directory = id( Λ + ":root" );
 var dirCache;
-
-/*
-{
-	externals : [
-		{ name: "external requirement", ref:refkey},
-	]
-
-	}
-	files : [
-		{ name : "blah", versions: [], size:0, date:new Date()}
-	]
-}
-*/
 
 	const storage = {
 
@@ -1163,3 +1144,62 @@ var dirCache;
 }
 
 }
+
+
+
+
+const pendingInit = [];
+var initDispatched = false;
+/*
+function Function() {
+    throw new Error( "Please use other code import methods.");
+}
+function eval() {
+    throw new Error( "Please use other code import methods.");
+}
+*/
+
+const sandbox = {
+    Λ : localStorage.getItem( "Λ" )/*Λ*/
+	, config : null
+	, sandbox : null
+	, Function : Function
+	, eval: eval
+	, require(a) {
+			return import(a);
+			//require
+		}
+	, module:null//module
+	, storage: null // privateStorage
+	, disk : null
+	, nativeDisk : null //physicalDisk
+	, console:console
+	, idGen : idGen
+/*
+	, _setTimeout : setTimeout
+	, _clearTimeout : clearTimeout
+	, _setInterval : setInterval
+*/
+	, onInit(cb) {
+	    if( initDispatched)cb();
+	    else pendingInit.push(cb);
+	}
+	//, Buffer: Buffer
+	, vmric(a,b) {
+		const f = new Function( a );
+		f.call( sandbox, b );
+		//vm.runInContext(a,sandbox,b)
+	} 
+	//, crypto: crypto
+	//, config(...args) { returnpost("config",...args); })(); }  // sram type config; reloaded at startup; saved on demand
+};
+//console.log( "Adding u8xor?", sandbox.idGen );
+sandbox.sandbox = sandbox;
+
+/* Seal Sandbox */
+["require","eval", "Function", /*"module",*/ "console", "process", /*"require",*/ "sandbox", "fs", "vm"].forEach(key => {
+    if( key in sandbox )
+	    Object.defineProperty(sandbox, key, { enumerable: false, writable: true, configurable: false });
+});
+	
+
