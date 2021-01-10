@@ -6,7 +6,7 @@ const Λ = {
 };
 
 import "../../Sentience/sandboxInit2.mjs"
-import "../../Sentience/sandboxPrerun2.mjs"
+import {prerun} from "../../Sentience/sandboxPrerun2.mjs"
 
 import {popups} from "@d3x0r/popups";
 
@@ -33,12 +33,16 @@ function openSocket() {
 		// Web Socket is connected. You can send data by send() method.
 		//ws.send("message to send"); 
 		l.ws = ws;
+		//ws.send( "{op:initDone}");
 		//ws.send( '{ op: "write", data:"/help" }' );
 	};
+	ws.onerror = function (a,b) { 
+		console.log( "was there a sensible error?", a, b );
+	}
 	ws.onmessage = function (evt) { 
-		const msg_ = JSON.parse( evt.data );
+		const msg_ = JSOX.parse( evt.data );
 		if( !ws.processMessage || !ws.processMessage( msg_ ) )
-			processMessage( msg_ );
+			processMessage( ws, msg_ );
 	};
 	ws.onclose = function() { 
 		l.ws = null;
@@ -55,10 +59,15 @@ function openSocket() {
 
 openSocket();
 
-function processMessage( msg ) {
+function processMessage( ws, msg ) {
+	if( msg.op === "start" ) {
+		prerun( msg.Λ, ws );
+	}
 	if( msg.op === "write" ) {
 		remoteConsole.write( msg.data, msg.prompt );
 	}
+
+	// this needs to be sanbox prerun thiing.
 	
 }
 
@@ -184,7 +193,7 @@ function setCaretToEnd(target/*: HTMLDivElement*/) {
 		localStorage.setItem( "Command History", JSOX.stringify( l.commandHistory ) );
 		vcon.inputPrompt = vcon.input; // update until a new prompt
 		remoteConsole.write( "\n", false );
-		l.ws.send( JSON.stringify( { op:"write", data:cmd } ) );
+		l.ws.send( JSOX.stringify( { op:"write", data:cmd } ) );
 		vcon.input.textContent = '';
 		vcon.input.focus();
 	}

@@ -1322,7 +1322,7 @@ function makeU16Key( ) {
     return u16generator();
 }
 
-var idGenModule = /*#__PURE__*/Object.freeze({
+var idGen = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	u8xor: u8xor,
 	xor: xor,
@@ -1337,1216 +1337,6 @@ var idGenModule = /*#__PURE__*/Object.freeze({
 	xkey: makeXKey,
 	ukey: makeU16Key
 });
-
-// This source is loaded, and appended with sandboxPrerun.js
-/*
-function Function() {
-    throw new Error( "Please use other code import methods.");
-}
-function eval() {
-    throw new Error( "Please use other code import methods.");
-}
-*/
-
-const sandbox = {
-    Λ : localStorage.getItem( "Λ" )/*Λ*/
-	, config : null
-	, sandbox : null
-	, Function : Function
-	, eval: eval
-	, require(a) {
-			return import(a);
-			//require
-		}
-	, module:null//module
-	, storage: null // privateStorage
-	, disk : null
-	, nativeDisk : null //physicalDisk
-	, console:console
-	, idGen : idGenModule
-	, _setTimeout : setTimeout
-	, _clearTimeout : clearTimeout
-	, _setInterval : setInterval
-	, onInit(cb) {
-	}
-	//, Buffer: Buffer
-	, vmric(a,b) {
-		const f = new Function( a );
-		f.call( sandbox, b );
-		//vm.runInContext(a,sandbox,b)
-	} 
-	//, crypto: crypto
-	//, config(...args) { returnpost("config",...args); })(); }  // sram type config; reloaded at startup; saved on demand
-};
-//console.log( "Adding u8xor?", sandbox.idGen );
-sandbox.sandbox = sandbox;
-
-/* Seal Sandbox */
-["require","eval", "Function", /*"module",*/ "console", "process", /*"require",*/ "sandbox", "fs", "vm"].forEach(key => {
-    if( key in sandbox )
-	    Object.defineProperty(sandbox, key, { enumerable: false, writable: true, configurable: false });
-});
-
-/*
-
-style classes
-    frameContainer - the outer frame
-    frameCaption - the top caption of the frame
-    frameContent - the container of the frame's future content.
-    frameClose - style of the upper close Item.
-    captionButton - this is a button appearin in the caption (close)
-    
-
-var popup = popups.create( "caption" );
-popup.show();
-popup.hide();
-popup.caption = "New Caption";
-popup.divContent  // insert frame content here
-
-*/
-
-//import {JSOX} from "jsox";
-//import {JSOX} from "../../jsox/lib/jsox.mjs";
-
-
-const popups = {
-	defaultDrag : true,
-	autoRaise : true,
-	create : createPopup,
-	simpleForm : createSimpleForm,
-	simpleNotice : createSimpleNotice,
-        makeList : createList,
-        makeCheckbox : makeCheckbox,
-        makeNameInput : makeNameInput,  // form, object, field, text; popup to rename
-        makeTextInput : makeTextInput,  // form, object, field, text
-        makeTextField : makeTextField,
-        makeButton : makeButton,
-        makeChoiceInput : makeChoiceInput,// form, object, field, choiceArray, text
-        makeDateInput : makeDateInput,  // form, object, field, text
-	strings : { get(s) { return s } },
-	setClass: setClass,
-	toggleClass: toggleClass,
-	clearClass:clearClass,
-	createMenu : createPopupMenu,
-};
-
-const globalMouseState = {
-        activeFrame : null
-    };
-var popupTracker;
-
-function addCaptionHandler( c, popup_ ) {
-	var popup = popup_;
-	if( !popup )
-	 	popup = createPopup( null);
-
-
-	var mouseState = {
-		frame:popup.divFrame,
-		x:0,y:0,
-		dragging:false
-	};
-	if( popups.autoRaise )
-	popup_.divFrame.addEventListener( "mousedown", (evt)=>{
-		popupTracker.raise( popup );
-	} );
-
-	function mouseHandler(c,state) {
-		
-		var added = false;
-		function mm(evt){
-			const state = globalMouseState.activeFrame;
-			if( state ) {
-   	  		if( state.dragging ) {
-				evt.preventDefault();
-				var pRect = state.frame.getBoundingClientRect();
-				//var x = evt.clientX - pRect.left;
-				//var y = evt.clientY - pRect.top;
-				var x = evt.x - pRect.left;
-				var y = evt.y - pRect.top;
-				state.frame.style.left =parseInt(state.frame.style.left) + (x-state.x);
-				state.frame.style.top= parseInt(state.frame.style.top) +(y-state.y);
-				if( state.frame.id ) {
-					localStorage.setItem( state.frame.id + "/x", popup.divFrame.style.left );
-					localStorage.setItem( state.frame.id + "/y", popup.divFrame.style.top );
-				}
-			}
-			}
-		}
-		function md(evt){
-			//evt.preventDefault();
-                        if( globalMouseState.activeFrame ) {
-                            return;
-                        }
-			var pRect = state.frame.getBoundingClientRect();
-			popupTracker.raise( popup );
-			//state.x = evt.clientX-pRect.left;
-			//state.y = evt.clientY-pRect.top;
-			state.x = evt.x-pRect.left;
-			state.y = evt.y-pRect.top;
-                        globalMouseState.activeFrame = state;
-			state.dragging = true;
-			if( !added ) {	
-				added = true;
-				document.body.addEventListener( "mousemove", mm );
-				document.body.addEventListener( "mouseup", mu );
-			}
-		}
-		function mu(evt){
-			evt.preventDefault();
-                        globalMouseState.activeFrame = null;
-			state.dragging = false;
-			added = false;
-			document.body.removeEventListener( "mousemove", mm );
-			document.body.removeEventListener( "mouseup", mu );
-		}
-
-		c.addEventListener( "mousedown", md );
-		c.addEventListener( "mouseup", mu );
-		c.addEventListener( "mousemove", mm );
-
-		c.addEventListener( "touchstart", (evt)=>{
-			evt.preventDefault();
-			var pRect = state.frame.getBoundingClientRect();
-			popupTracker.raise( popup );
-			//state.x = evt.clientX-pRect.left;
-			//state.y = evt.clientY-pRect.top;
-			state.x = evt.touches[0].clientX-pRect.left;
-			state.y = evt.touches[0].clientY-pRect.top;
-			state.dragging = true;
-			
-		});
-		c.addEventListener( "touchmove", (evt)=>{
-			evt.preventDefault();
-			if( state.dragging ) {
-				const points = evt.touches;
-				var pRect = state.frame.getBoundingClientRect();
-				var x = points[0].clientX - pRect.left;
-				var y = points[0].clientY - pRect.top;
-				state.frame.style.left =parseInt(state.frame.style.left) + (x-state.x);
-				state.frame.style.top= parseInt(state.frame.style.top) +(y-state.y);
-				if( state.frame.id ) {
-					localStorage.setItem( state.frame.id + "/x", popup.divFrame.style.left );
-					localStorage.setItem( state.frame.id + "/y", popup.divFrame.style.top );
-				}
-			}
-			
-		});
-		c.addEventListener( "touchend", (evt)=>{
-			evt.preventDefault();
-			popupTracker.raise( popup );
-			state.dragging = false;
-			
-		});
-
-	}
-
-	if( popups.defaultDrag ) {
-		mouseHandler(c, mouseState );
-
-		mouseHandler(popup_.divFrame, mouseState );
-	}
-
-}
-
-function initPopupTracker() {
-
-	var tracker = {
-		popups : [],
-		raise( popup ) {
-			var top = tracker.popups.length;
-			var n;
-			var from = Number(popup.divFrame.style.zIndex);
-			if( from === top ) return;
-
-			for( n = 0; n < tracker.popups.length; n++ ) {
-				if( n == popup.index )
-					popup.divFrame.style.zIndex = top;
-				else {
-					var thisZ = Number(tracker.popups[n].divFrame.style.zIndex);
-					if( thisZ > from )
-						tracker.popups[n].divFrame.style.zIndex = Number(tracker.popups[n].divFrame.style.zIndex) - 1;
-				}
-			}
-		},
-		find( id ) {
-			return this.popups.find( popup=>popup.divFrame.id === id );
-		},
-		addPopup(popup) {
-			popup.index = tracker.popups.length;
-			popup.divFrame.style.zIndex = popup.index+1;
-			tracker.popups.push( popup );
-			popup.raise = function() {
-				tracker.raise( popup);
-			};
-		}
-	};
-	return tracker;
-}
-popupTracker = initPopupTracker();
-
-class Popup {
-	popupEvents = {
-		close : [],
-		show : [],
-	};
-	divFrame = document.createElement( "div" );
-	divCaption = document.createElement( "div" );
-        divContent = document.createElement( "div" );
-        divClose = document.createElement( "div" );
-	popup = this;
-
-	constructor(caption_,parent) {
-		this.divFrame.style.left= 0;
-		this.divFrame.style.top= 0;
-		this.divFrame.className = parent?"formContainer":"frameContainer";
-		if( caption_ != "" )
-			this.divFrame.appendChild( this.divCaption );
-		this.divFrame.appendChild( this.divContent );
-		this.divCaption.appendChild( this.divClose );
-
-		this.divCaption.className = "frameCaption";
-		this.divContent.className = "frameContent";
-		this.divClose.className = "captionButton";
-        	popupTracker.addPopup( this );
-           this.caption = caption_;
-                parent = (parent&&parent.divContent) || document.body;
-			parent.appendChild( this.divFrame );
-
-			addCaptionHandler( this.divCaption, this );
-      }
-		set caption(val) {
-			this.divCaption.innerText = val;
-		}
-		center() {
-			var myRect = this.divFrame.getBoundingClientRect();
-			var pageRect = this.divFrame.parentElement.getBoundingClientRect();
-			this.divFrame.style.left = (pageRect.width-myRect.width)/2;
-			this.divFrame.style.top = (pageRect.height-myRect.height)/2;
-		}
-		over( e ){
-			var target = e.getBoundingClientRect();
-			this.divFrame.style.left = target.left;
-			this.divFrame.style.top = target.top;
-		}
-		on(event,cb) {
-			if( cb && "function" === typeof cb )
-				if( this.popupEvents[event] )
-					this.popupEvents[event].push(cb);
-				else
-					this.popupEvents[event] = [cb];
-			else {
-				var cbList;
-				if( cbList = this.popupEvents[event]  ) {
-					cbList.forEach( cbEvent=>cbEvent( cb ));
-				}
-			}
-		}
-		hide() {
-			this.divFrame.style.display = "none";
-		}
-		show() {
-			this.divFrame.style.display = "";
-			//popupTracker.raise( this );
-
-			this.on( "show", true );
-		}
-		move(x,y) {
-			this.divFrame.style.left = x+"%";
-			this.divFrame.style.top = y+"%";
-		}
-	appendChild(e) {
-		return this.divContent.appendChild(e)
-	}
-	remove() {
-		this.divFrame.remove();
-	}
-}
-
-function createPopup( caption ) {
-	return new Popup(caption);
-}
-
-function createSimpleForm( title, question, defaultValue, ok, cancelCb ) {
-	const popup = popups.create( title );
-	popup.on( "show", ()=>{
-		if( "function" === typeof defaultValue ){
-			input.value = defaultValue();
-		}
-		else
-			input.value = defaultValue;
-		input.focus();
-		input.select();
-	});
-	popup.on( "close", ()=>{
-		// aborted...
-		cancel && cancel();
-	});
-
-	var form = document.createElement( "form" );
-	form.className = "frameForm";
-	form.setAttribute( "action", "none" );
-	form.addEventListener( "submit", (evt)=>{
-		evt.preventDefault();
-		popup.hide();
-		ok && ok(input.value);
-	} );	
-	form.addEventListener( "reset", (evt)=>{
-		evt.preventDefault();
-		popup.hide();
-	} );	
-
-	var text = document.createElement( "SPAN" );
-	text.textContent = question;
-	var input = document.createElement( "INPUT" );
-	input.className = "popupInputField";
-	input.setAttribute( "size", 45 );
-	input.value = defaultValue;
-
-	var okay = document.createElement( "BUTTON" );
-	okay.className = "popupOkay";
-	okay.textContent = "Okay";
-	okay.setAttribute( "name", "submit" );
-	okay.addEventListener( "click", (evt)=>{
-		evt.preventDefault();
-		popup.hide();
-		ok && ok( input.value );
-	});
-
-	var cancel = document.createElement( "BUTTON" );
-	cancel.className = "popupCancel";
-	cancel.textContent = "Cancel";
-	cancel.setAttribute( "type", "reset" );
-	cancel.addEventListener( "click", (evt)=>{
-		evt.preventDefault();
-		popup.hide();
-		cancelCb && cancelCb( );
-	});
-
-	popup.divFrame.addEventListener( "keydown", (e)=>{
-		if(e.keyCode==27){
-			e.preventDefault();
-			popup.hide();
-			cancelCb && cancelCb( );
-		}
-	});
-	popup.divContent.appendChild( form );
-	form.appendChild( text );
-	form.appendChild( document.createElement( "br" ) );
-	form.appendChild( input );
-	form.appendChild( document.createElement( "br" ) );
-	form.appendChild( document.createElement( "br" ) );
-	form.appendChild( cancel );
-	form.appendChild( okay );
-	
-	popup.center();
-	popup.hide();
-	return popup;
-}
-
-function makeButton( form, caption, onClick ) {
-
-	var button = document.createElement( "div" );
-	button.className = "button";
-	button.style.width = "max-content";
-	var buttonInner = document.createElement( "div" );
-	buttonInner.className = "buttonInner";
-	buttonInner.style.width = "max-content";
-	buttonInner.innerText = caption;
-
-        button.appendChild(buttonInner);
-
-
-        button.addEventListener( "keydown", (evt)=>{
-		if( evt.key === "Enter" || evt.key === " " ) {
-			evt.preventDefault();
-        	        evt.stopPropagation();
-	                onClick();
-                }
-	} );
-	//var okay = document.createElement( "BUTTON" );
-	//okay.className = "popupOkay";
-	//okay.textContent = caption;
-	button.addEventListener( "click", (evt)=>{
-		evt.preventDefault();
-                onClick();
-	});
-	button.addEventListener( "touchstart", (evt)=>{
-		evt.preventDefault();
-		setClass( button, "pressed" );
-		
-	});
-	button.addEventListener( "touchend", (evt)=>{
-		evt.preventDefault();
-		clearClass( button, "pressed" );
-                onClick();
-		
-	});
-	button.addEventListener( "mousedown", (evt)=>{
-		evt.preventDefault();
-		setClass( button, "pressed" );
-		
-	});
-	button.addEventListener( "mouseup", (evt)=>{
-		evt.preventDefault();
-		clearClass( button, "pressed" );
-		
-	});
-	form.appendChild( button );
-        return button;
-
-}
-
-function createSimpleNotice( title, question, ok, cancel ) {
-    return new SimpleNotice( title, question, ok, cancel );
-}
-
-class SimpleNotice extends Popup {
-	//const popup = popups.create( title );
-	//const show_ = popup.show.bind(popup);
-    	form = document.createElement( "form" );
-	okay = makeButton( form, "Okay", ()=>{
-		popup.hide();
-		ok && ok( );
-	})
-	
-
-    	appendChild( e ) {
-            this.form.insertChild( e, this.okay );
-        }
-        constructor( title, question, ok, cancel ) {
-
-	this.show = function( caption, content ) {
-		if( caption && content ) {
-			popup.divCaption.textContent = caption;
-			text.textContent = content;
-		}
-		else if( caption )
-			text.textContent = caption;
-		show_();
-	};
-
-	popup.on( "show", ()=>{
-		this.okay.focus();
-	});
-	popup.on( "close", ()=>{
-		// aborted...
-		cancel && cancel();
-	});
-
-	var form = document.createElement( "form" );
-	form.className = "frameForm";
-	form.setAttribute( "action", "none" );
-	form.addEventListener( "submit", (evt)=>{
-		evt.preventDefault();
-		popup.hide();
-		//console.log( "SUBMIT?", input.value );
-	} );	
-	form.addEventListener( "reset", (evt)=>{
-		evt.preventDefault();
-		popup.hide();
-	} );	
-
-	var text = document.createElement( "SPAN" );
-	text.className = "noticeText";
-	text.textContent = question;
-
-	
-	this.okay.className += " notice";
-	this.okay.children[0].className += " notice";
-
-
-
-	this.divFrame.addEventListener( "keydown", (e)=>{
-		if(e.keyCode==27){
-			e.preventDefault();
-			this.hide();
-			ok && ok( );
-		}
-	});
-	this.divContent.appendChild( form );
-	form.appendChild( text );
-	form.appendChild( document.createElement( "br" ) );
-	form.appendChild( document.createElement( "br" ) );
-	form.appendChild( this.okay );
-
-	if( cancel )  {
-		let cbut = makeButton( form, "Cancel", ()=>{
-			this.hide();
-			cancel && cancel( );
-		});
-		cbut.className += " notice";
-		cbut.children[0].className += " notice";
-	}
-	this.center();
-	this.hide();
-	return this;
-}
-}
-
-
-
-class List {
-		 selected = null;
-		 groups = [];
-		 itemOpens = false;
-    constructor( parentDiv, parentList, toString )
-        {
-		this.toString = toString;
-		this.divTable = parentDiv;
-                this.parentList = parentList;
-        }
-
-		push(group, toString_, opens) {
-			var itemList = this.divTable.childNodes;
-			var nextItem = null;
-			for( nextItem of itemList) {
-				if( nextItem.textContent > this.toString(group) )
-					break;
-				nextItem = null;
-			}
-			
-			var newLi = document.createElement( "LI" );
-			newLi.className = "listItem";
-			
-			this.divTable.insertBefore( newLi, nextItem );//) appendChild( newLi );
-			newLi.addEventListener( "click", (e)=>{
-				e.preventDefault();
-				if( this.selected )
-					this.selected.classList.remove("selected");
-				newLi.classList.add( "selected" );
-				this.selected = newLi;
-			});
-
-			var newSubList = document.createElement( "UL");
-			newSubList.className = "listSubList";
-			if( this.parentList && this.parentList.parentItem )
-				this.parentList.parentItem.enableOpen( this.parentList.thisItem );
-
-			var treeLabel = document.createElement( "span" );
-			treeLabel.textContent = this.toString(group);
-			treeLabel.className = "listItemLabel";
-			newLi.appendChild( treeLabel );
-
-			//var newSubDiv = document.createElement( "DIV");
-			newLi.appendChild( newSubList );
-			//newSubList.appendChild( newSubDiv);
-			var newRow;
-			var subItems = createList( this, newSubList, toString_, true );
-			this.groups.push( newRow={ opens : false, group:group, item: newLi, subItems:subItems
-                        	, parent:this.parentList
-                                , set text(s) {
-                                	treeLabel.textContent = s;
-                               	}
-                        	, hide() {
-                                	this.item.style.display = "none";
-                                }
-                        	, show() {
-                                	this.item.style.display = "";
-                                }
-                        } );
-			return newRow;
-		}
-		enableOpen(item) {
-			if( item.opens) return;
-			item.opens = true;
-				var treeKnob = document.createElement( "span" );
-				treeKnob.textContent = "-";
-				treeKnob.className = "knobOpen";
-				item.item.insertBefore( treeKnob, item.item.childNodes[0] );
-				treeKnob.addEventListener( "click", (e)=>{
-					e.preventDefault();
-					if( treeKnob.className === "knobClosed"){
-						treeKnob.className = "knobOpen";
-						treeKnob.textContent = "-";
-						item.subItems.items.forEach( sub=>{
-							sub.item.style.display="";
-						});
-					}else {
-						treeKnob.className = "knobClosed";
-						treeKnob.textContent = "+";
-						item.subItems.items.forEach( sub=>{
-							sub.item.style.display="none";
-						});
-
-					}
-				});
-		}
-		enableDrag(type,item,key1,item2,key2) {
-			item.item.setAttribute( "draggable", true );
-			item.item.addEventListener( "dragstart", (evt)=>{
-				//if( evt.dataTransfer.getData("text/plain" ) )
-				//	evt.preventDefault();
-				if( item2 )
-					evt.dataTransfer.setData( "text/" + type, item.group[key1]+","+item2.group[key2]);
-				else
-					evt.dataTransfer.setData( "text/" + type, item.group[key1]);
-				evt.dataTransfer.setData("text/plain",  evt.dataTransfer.getData("text/plain" ) + JSON.stringify( {type:type,val1:item.group[key1],val2:item2 && item2.group[key2] } ) );
-				console.log( "dragstart:", type );
-				if( item )
-					evt.dataTransfer.setData("text/item", item.group[key1] );
-				if( item2 )
-					evt.dataTransfer.setData("text/item2", item2.group[key2] );
-			});
-		}
-		enableDrop( type, item, cbDrop ) {
-			item.item.addEventListener( "dragover", (evt)=>{
-				evt.preventDefault();
-				evt.dataTransfer.dropEffect = "move";
-				//console.log( "Dragover:", evt.dataTransfer.getData( "text/plain" ), evt );
-			});
-			item.item.addEventListener( "drop", (evt)=>{
-				evt.preventDefault();
-				var objType = evt.dataTransfer.getData( "text/plain" );
-				if( "undefined" !== typeof JSOX ) {
-				JSOX.begin( (event)=>{
-					if( type === event.type ){
-						//console.log( "drop of:", evt.dataTransfer.getData( "text/plain" ) );
-						cbDrop( accruals.all.get( event.val1 ) );
-					}
-				} ).write( objType );
-				}
-			});
-		}
-		update(group) {
-			var item = this.groups.find( group_=>group_.group === group );
-			item.textContent = this.toString( group );
-		}
-		get items() {
-			return this.groups;
-		}
-		reset() {
-			while( this.divTable.childNodes.length )
-				this.divTable.childNodes[0].remove();
-		}
-	}
-
-function createList( parent, parentList, toString, opens ) {
-     return new List( parent, parentList, toString, opens );
-}
-
-function makeCheckbox( form, o, field, text ) 
-{
-	let initialValue = o[field];
-	var textCountIncrement = document.createElement( "SPAN" );
-	textCountIncrement.textContent = text;
-	var inputCountIncrement = document.createElement( "INPUT" );
-	inputCountIncrement.setAttribute( "type", "checkbox");
-	inputCountIncrement.className = "checkOption rightJustify";
-	inputCountIncrement.checked = o[field];
-	//textDefault.
-	var onChange = [];
-	var binder = document.createElement( "div" );
-	binder.className = "fieldUnit";
-	binder.addEventListener( "click", (e)=>{ 
-		if( e.target===inputCountIncrement) return; e.preventDefault(); inputCountIncrement.checked = !inputCountIncrement.checked; });
-	inputCountIncrement.addEventListener( "change", (e)=>{ 
-		 o[field] = inputCountIncrement.checked; });
-	form.appendChild(binder );
-	binder.appendChild( textCountIncrement );
-	binder.appendChild( inputCountIncrement );
-	//form.appendChild( document.createElement( "br" ) );
-	return {
-		on(event,cb){
-			if( event === "change" ) onChange.push(cb);
-			inputCountIncrement.addEventListener(event,cb);
-		},
-		get checked() {
-			return inputCountIncrement.checked;
-		},
-		set checked(val) {
-			inputCountIncrement.checked = val;
-		},
-		get value() { return inputCountIncrement.checked; },
-		set value(val) { 
-			o[field] = val;
-			inputCountIncrement.checked = val;
-			onChange.forEach( cb=>cb());
-		 }
-                ,
-                reset(){
-                    o[field] = initialValue;
-                    inputCountIncrement.checked = initialValue;
-                },
-                changes() {
-                    if( o[field] !== initialValue ) {
-                        return text
-                            + popups.strings.get( " changed from " )
-                            + initialValue
-                            + popups.strings.get( " to " )
-                            + o[field];
-                    }
-                    return '';
-				},
-		get style() {
-			return binder.style;
-		}
-	}
-}
-
-function makeTextInput( form, input, value, text, money, percent ){
-	const initialValue = input[value];
-
-	var textMinmum = document.createElement( "SPAN" );
-	textMinmum.textContent = text;
-	var inputControl = document.createElement( "INPUT" );
-	inputControl.className = "textInputOption rightJustify";
-        inputControl.addEventListener( "mousedown", (evt)=>evt.stopPropagation() );
-	//textDefault.
-        function setValue() {
-	if( money ) {
-		inputControl.value = utils.to$(input[value]);
-		inputControl.addEventListener( "change", (e)=>{
-			var val = utils.toD(inputControl.value);
-			input[value] = inputControl.value = utils.to$(val);
-		});
-	} else if( percent ) {
-		inputControl.value = utils.toP(input[value]);
-		inputControl.addEventListener( "change", (e)=>{
-			var val = utils.fromP(inputControl.value);
-			input[value] = inputControl.value = utils.toP(val);
-		});
-	}else {
-		inputControl.value = input[value];
-		inputControl.addEventListener( "input", (e)=>{
-			var val = inputControl.value;
-                        input[value] = val;
-		});
-	}
-        }
-        setValue();
-
-	var binder = document.createElement( "div" );
-	binder.className = "fieldUnit";
-	form.appendChild(binder );
-	binder.appendChild( textMinmum );
-	binder.appendChild( inputControl );
-	return {
-            	addEventListener(a,b) { return inputControl.addEventListener(a,b) },
-		get value () {
-			if( money )
-				return utils.toD(inputControl.value);
-			if( percent ) 
-				return utils.fromP(inputControl.value);
-			return inputControl.value;
-		},
-		set value (val) {
-			if( money )
-				inputControl.value = utils.to$(val);
-			else if( percent )
-				inputControl.value = utils.toP(val);
-			else
-				inputControl.value = val;			
-		},
-                reset(){
-                    input[value] = initialValue;
-                    setValue();
-                },
-                changes() {
-                    if( input[value] !== initialValue ) {
-                        return text
-                            + popups.strings.get( " changed from " )
-                            + initialValue
-                            + popups.strings.get( " to " )
-                            + input[value];
-                    }
-                    return '';
-                }
-	}
-}
-
-
-function makeTextField( form, input, value, text, money, percent ){
-	const initialValue = input[value];
-
-	var textMinmum = document.createElement( "SPAN" );
-	textMinmum.textContent = text;
-	var inputControl = document.createElement( "SPAN" );
-	inputControl.className = "textInputOption rightJustify";
-        inputControl.addEventListener( "mousedown", (evt)=>evt.stopPropagation() );
-	//textDefault.
-        function setValue() {
-	if( money ) {
-		inputControl.value = utils.to$(input[value]);
-		inputControl.addEventListener( "change", (e)=>{
-			var val = utils.toD(inputControl.value);
-			input[value] = inputControl.value = utils.to$(val);
-		});
-	} else if( percent ) {
-		inputControl.value = utils.toP(input[value]);
-		inputControl.addEventListener( "change", (e)=>{
-			var val = utils.fromP(inputControl.value);
-			input[value] = inputControl.value = utils.toP(val);
-		});
-	}else {
-		inputControl.value = input[value];
-		inputControl.addEventListener( "input", (e)=>{
-			var val = inputControl.value;
-                        input[value] = val;
-		});
-	}
-        }
-        setValue();
-
-	var binder = document.createElement( "div" );
-	binder.className = "fieldUnit";
-	form.appendChild(binder );
-	binder.appendChild( textMinmum );
-	binder.appendChild( inputControl );
-	return {
-            	addEventListener(a,b) { return inputControl.addEventListener(a,b) },
-		get value () {
-			if( money )
-				return utils.toD(inputControl.value);
-			if( percent ) 
-				return utils.fromP(inputControl.value);
-			return inputControl.value;
-		},
-		set value (val) {
-			if( money )
-				inputControl.value = utils.to$(val);
-			else if( percent )
-				inputControl.value = utils.toP(val);
-			else
-				inputControl.value = val;			
-		},
-                reset(){
-                    input[value] = initialValue;
-                    setValue();
-                },
-                changes() {
-                    if( input[value] !== initialValue ) {
-                        return text
-                            + popups.strings.get( " changed from " )
-                            + initialValue
-                            + popups.strings.get( " to " )
-                            + input[value];
-                    }
-                    return '';
-                }
-	}
-}
-
-function makeNameInput( form, input, value, text ){
-	const initialValue = input[value];
-	var binder;
-	var textLabel = document.createElement( "SPAN" );
-	textLabel.textContent = text;
-
-	var text = document.createElement( "SPAN" );
-	text.textContent = input[value];
-
-	var buttonRename = document.createElement( "Button" );
-	buttonRename.textContent = popups.strings.get("(rename)");
-	buttonRename.className="buttonOption rightJustify";
-        buttonRename.addEventListener("click", (evt)=>{
-		evt.preventDefault();
-                //title, question, defaultValue, ok, cancelCb
-		const newName = createSimpleForm( popups.strings.get("Change Name")
-                                                 , popups.strings.get("Enter new name")
-                                                 , input[value]
-                                                 , (v)=>{
-                                                 	input[value] = v;
-							text.textContent = v;
-                                                 }
-                                                 );
-                newName.show();
-	} );
-
-	binder = document.createElement( "div" );
-	binder.className = "fieldUnit";
-	form.appendChild(binder );
-	binder.appendChild( textLabel );
-	binder.appendChild( text );
-	binder.appendChild( buttonRename );
-	//binder.appendChild( document.createElement( "br" ) );
-	return {
-		get value() {
-			return text.textContent;
-		}		,
-		set value(val) {
-			text.textContent = val;
-		},
-                reset(){
-                    input[value] = initialValue;
-                    textLabel.textContent = initialValue;
-                },
-                changes() {
-                    if( input[value] !== initialValue ) {
-                        return text
-                            + popups.strings.get( " changed from " )
-                            + initialValue
-                            + popups.strings.get( " to " )
-                            + input[value];
-                    }
-                    return '';
-                }
-	}
-}
-
-	function toggleClass( el, cn )  {
-		if( el.className.includes(cn) )  {
-			el.className = el.className.split( " " ).reduce( (a,el)=> ( el !== cn )?(a.push(el),a):a, [] ).join(' ');
-		}else {
-			el.className += " " + cn;
-		}
-	}
-	function clearClass( el, cn )  {
-		if( el.className.includes(cn) )  {
-			el.className = el.className.split( " " ).reduce( (a,el)=> ( el !== cn )?(a.push(el),a):a, [] ).join(' ');
-		}
-	}
-	function setClass( el, cn )  {
-		if( el.className.includes(cn) )  ;else {
-			el.className += " " + cn;
-		}
-	}
-
-function makeDateInput( form, input, value, text ){
-	const initialValue = input[value];
-	var textMinmum = document.createElement( "SPAN" );
-	textMinmum.textContent = text;
-	var inputControl = document.createElement( "INPUT" );
-	inputControl.className = "textInputOption rightJustify";
-        inputControl.type = "date"; // returns date at midnight UTC not local.
-        inputControl.addEventListener( "mousedown", (evt)=>{
-		evt.stopPropagation(); // halt on this control
-        } );
-
-	//textDefault.
-	if( input[value] instanceof Date ) {
-		inputControl.valueAsDate = input[value];
-        }else
-		inputControl.value = input[value];
-        inputControl.addEventListener( "change",(evt)=>{
-		console.log( "Date type:", inputControl.value, new Date( inputControl.value ) );
-		input[value] = new Date( inputControl.value );
-                // convert to wall clock?  What if browser isn't in birth locale?
-                //input[value].setMinutes( input[value].getTimezoneOffset());
-	} );
-
-	var binder = document.createElement( "div" );
-	binder.className = "fieldUnit";
-	form.appendChild(binder );
-	binder.appendChild( textMinmum );
-	binder.appendChild( inputControl );
-	return {
-            	addEventListener(a,b) { return inputControl.addEventListener(a,b) },
-		get value () {
-			return inputControl.value;
-		},
-		set value (val) {
-                    	//input[value] = val;
-			inputControl.value = val;
-		}
-        	, hide() {
-                	this.item.style.display = "none";
-                }
-        	, show() {
-                	this.item.style.display = "";
-                }
-                , reset(){
-                    input[value] = initialValue;
-                    inputControl.valueAsDate = initialValue;
-                }
-                , changes() {
-                    if( input[value] !== initialValue ) {
-                        return text
-                            + popups.strings.get( " changed from " )
-                            + initialValue
-                            + popups.strings.get( " to " )
-                            + input[value];
-                    }
-                    return '';
-                }
-	}
-}
-
-// --------------- Dropdown choice list ---------------------------
-function makeChoiceInput( form, input, value, choices, text ){
-	const initialValue = input[value];
-
-	var textMinmum = document.createElement( "SPAN" );
-	textMinmum.textContent = text;
-	var inputControl = document.createElement( "SELECT" );
-	inputControl.className = "selectInput rightJustify";
-        inputControl.addEventListener( "mousedown", (evt)=>evt.stopPropagation() );
-
-        for( let choice of choices ) {
-            	const option = document.createElement( "option" );
-                option.text = choice;
-                if( choice === input[value] ) {
-	           inputControl.selectedIndex = inputControl.options.length-1;
-                }
-		inputControl.add( option );
-        }
-	//textDefault.
-	inputControl.value = input[value];
-        inputControl.addEventListener( "change",(evt)=>{
-		const idx = inputControl.selectedIndex;
-		if( idx >= 0 ) {
-			console.log( "Value in select is :", inputControl.options[idx].text );
-			input[value] = inputControl.options[idx].text;
-                }
-	} );
-
-	var binder = document.createElement( "div" );
-	binder.className = "fieldUnit";
-	form.appendChild(binder );
-	binder.appendChild( textMinmum );
-	binder.appendChild( inputControl );
-	return {
-		get value () {
-			return inputControl.value;
-		},
-		set value (val) {
-			inputControl.value = val;
-		},
-                reset(){
-                    input[value] = initialValue;
-                    inputControl.value = initialValue;
-                },
-                changes() {
-                    if( input[value] !== initialValue ) {
-                        return text
-                            + popups.strings.get( " changed from " )
-                            + initialValue
-                            + popups.strings.get( " to " )
-                            + input[value];
-                    }
-                    return '';
-                }
-	}
-}
-
-
-
-//--------------------------- Quick Popup Menu System ------------------------------
-
-const mouseCatcher = document.createElement( "div" );
-document.body.appendChild( mouseCatcher );
-mouseCatcher.addEventListener( "contextmenu", (evt)=>{ evt.preventDefault(); evt.stopPropagation();return false; } );
-mouseCatcher.className = "mouseCatcher";
-
-mouseCatcher.addEventListener( "click", (evt)=>{
-	mouseCatcher.style.visibility = "hidden";
-} );
-
-function createPopupMenu() {
-
-	let keepShow = false;
-
-	function menuCloser() {
-		if( menu.lastShow ) {
-			if( keepShow ) {
-				menu.lastShow = 0;
-				keepShow = false;
-				return;
-			}
-			const now = Date.now();
-			if( ( now - menu.lastShow ) > 500 )  {
-				menu.lastShow = 0; // reset this, otherwise hide will just schedule this timer
-				if( menu.subOpen ) menu.subOpen.hide();
-				menu.hide();
-			}
-			if( menu.lastShow )
-				setTimeout( menuCloser, 500 - ( now - menu.lastShow ) );
-		}
-	}
-
-	const menu = {
-		items: [],
-		lastShow : 0,
-		parent : null,
-		subOpen : null,
-		container : document.createElement( "div" ),
-		board : null,
-		separate( ) {
-			var newItem = document.createElement( "HR" );
-			menu.container.appendChild( newItem );
-                },
-
-		addItem( text, cb ) {
-				var newItem = document.createElement( "A" );
-				var newItemBR = document.createElement( "BR" );
-				newItem.textContent = text;
-				menu.container.appendChild( newItem );
-				menu.container.appendChild( newItemBR );
-				newItem.className = "popupItem";
-				newItem.addEventListener( "click", (evt)=>{
-				       cb();
-				       //console.log( "Item is clicked.", evt.target.value );
-				       this.hide( true );
-				} );
-				newItem.addEventListener( "mouseover", (evt)=>{
-					if( menu.subOpen ) {
-						menu.subOpen.hide();
-						menu.subOpen = null;
-					}
-					keepShow = true;
-				} );
-		},
-		addMenu( text ) {
-				var newItem = document.createElement( "A" );
-				var newItemBR = document.createElement( "BR" );
-				newItem.textContent = text;
-				this.container.appendChild( newItem );
-				this.container.appendChild( newItemBR );
-				const value = createPopupMenu();
-				{
-					value.parent = this;
-					newItem.addEventListener( "mouseover", (evt)=>{
-						var r = newItem.getBoundingClientRect();
-						keepShow = true;
-						console.log( "Item is clicked show that.", evt.clientX, evt.clientY );
-						value.show( evt.clientX, r.top - 10, menu.cb );
-						menu.subOpen = value;
-					} );
-					newItem.addEventListener( "mouseout", (evt)=>{
-						var r = newItem.getBoundingClientRect();
-						console.log( "Item is clicked show that.",  evt.clientX, r.top );
-						if( evt.toElement !== newItem.container )		
-							value.hide();
-					} );
-					newItem.addEventListener( "mousemove", (evt)=>{
-						if( this.subOpen ) this.subOpen.lastShow = Date.now();
-					} );
-				}
-				return value;
-		},
-		hide( all ) {
-			if( menu.lastShow ) return menuCloser();			
-			this.container.style.visibility = "hidden";
-			if( this.parent ) {
-				this.parent.subOpen = null; // should be the same as Me... 
-				if( all )
-					this.parent.hide( all );
-			} else {
-				mouseCatcher.style.visibility = "hide";
-			}
-		},
-		show( board, x, y, cb ) {
-			menu.lastShow = Date.now();
-			this.board = board;
-			menu.cb = cb;
-			mouseCatcher.style.visibility = "visible";
-			this.container.style.visibility = "inherit";
-			this.container.style.left = x;
-			this.container.style.top = y;
-		},
-		reset() {
-			this.hide(true);
-			//console.log( "hide everything?" );	
-		}
-	};
-
-	mouseCatcher.appendChild( menu.container );
-	menu.container.className = "popup";
-	menu.container.style.zIndex = 50;
-	menu.hide(); 
-	//document.body.appendChild( menu.container );
-	return menu;
-}
 
 // jsox.js
 // JSOX JavaScript Object eXchange. Inherits human features of comments
@@ -5261,7 +4051,7 @@ JSOX$1.stringifier = function() {
 	// use window.btoa' step. According to my tests, this appears to be a faster approach:
 	// http://jsperf.com/encoding-xhr-image-data/5
 	// doesn't have to be reversable....
-	const encodings$3 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+	const encodings$3 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$_';
 	const decodings$2 = { '~':-1
 		,'=':-1
 		,'$':62
@@ -5374,6 +4164,5083 @@ const nonIdent =
 [ [ 0,256,[ 0xffd9ff,0xff6aff,0x1fc00,0x380000,0x0,0xfffff8,0xffffff,0x7fffff] ]
 ].map( row=>{ return { firstChar : row[0], lastChar: row[1], bits : row[2] }; } );
 
+function prerun(Λ,ws) {
+const _debug_requires = false;
+const _debug_command_run =  false;
+
+const f= Object.getPrototypeOf({}).constructor.constructor;
+
+Error.stackTraceLimit = 100;
+//const { getEntity } = require('../Entity/entity.js');
+
+const builtinModules = [];
+//builtinModules.require = require;
+//const disk = sack.Volume();
+//const JSOX = sack.JSOX;
+
+const coreThreadEventer = ws;
+
+ws.postMessage= function postMessage(msg ) {
+	if( "object" === typeof msg ) {
+		msg = JSOX$1.stringify(msg );
+	}
+	ws.send( msg );
+};
+
+function doLog(...args) {
+	console.log('sandboxPrerun:',s);
+	//console.log(s);
+}
+const pendingOps = [];
+
+
+var mid = 0;
+let timerId = 0; // used to uniquely identify timers
+let myName = 'unnamed';
+const objects = new Map();
+const self = ws;
+const entity = makeEntity(Λ);
+//console.log( "This is logged in the raw startup of the sandbox:", Shell );
+
+const drivers = [];
+var remotes = new WeakMap();
+var pendingRequire = false;
+var codeStack = [];
+
+
+function processMessage(msg, stream) {
+	if ("string" === typeof msg) {
+		console.trace("String input");
+	}
+
+	function reply(msg) {
+		if (stream)
+			process.stdout.write(JSOX$1.stringify(msg));
+		else
+			coreThreadEventer.postMessage(msg);
+	}
+	if (msg.op === "run") {
+		var prior_execution = codeStack.find(c => c.path === msg.file.path);
+		if (prior_execution)
+			doLog("Duplicate run of the same code; shouldn't we just return the prior?  I mean sure, maybe the filter of this should be higher?", msg.file, codeStack);
+		var res;
+		try {
+			const code = { file: msg.file, id:msg.id, result: null };
+			var codeIndex = codeStack.push(code)-1;
+			//doLog( "RunInfo: " + msg.file );
+			//console.log( "run code(delayed):"+ msg.code );			
+			var res = vmric(msg.code, sandbox.sandbox, { filename: msg.file.src, lineOffset: 0, columnOffset: 0, displayErrors: true });
+			if (res && (res instanceof Promise || Promise.resolve(res) === res || ("undefined" !== typeof res.then)))
+				res.then(
+					(realResult) => {
+						_debug_command_run && doLog( "Promised result from code:", realResult );
+						//_debug_commands &&
+						//doLog( "And post result.", pendingRequire, realResult );
+						if (pendingRequire) {
+							_debug_requires && console.log( "This is in a pending require for:?", code.file.src );
+							code.result = realResult;
+							reply({ op: "run", ret: codeIndex, id: msg.id });
+						} else
+							reply({ op: "run", ret: realResult, id: msg.id });
+					}
+				).catch(err => {
+					_debug_command_run && doLog( "Error caught from async code:", err );
+					if (err)
+						reply(({
+							op: "error"
+							, file: msg.file.src, error: err.toString() + (err.stack ? err.stack.toString() : "NoStack"), id: msg.id
+						}));
+					else
+						reply(({ op: "error", file: msg.file.src, error: "No Error!", id: msg.id }));
+				});
+			else {
+				if (pendingRequire) {
+					console.log( "Direct response:", res );
+					code.result = res;
+				}
+				doLog("And post sync result.", res);
+				reply(({ op: "run", ret: res, id: msg.id }));
+			}
+			//doLog( "Did it?", sandbox );
+			return;
+		} catch (err) {
+			doLog("Run Failed:", err, msg.code);
+			reply(({ op: "error", error: err.toString(), stack: err.stack, id: msg.id }));
+			return;
+		}
+	} else if (msg.op === "ing") {
+		return sandbox.ing(msg.ing, msg.args);
+	} else if (msg.op === "On") {
+		console.log( "capital On ", msg );
+		var e = objects.get(msg.on);
+		switch (true) {
+			case "name" === msg.On:
+				myName = msg.args;
+				e.cache.name = msg.args;
+				break;
+			case "description" === msg.On:
+				e.cache.desc = msg.args;
+				break;
+		}
+	} else if (msg.op === "out") {
+		if (msg.out) {
+			if (self.io.output)
+				self.io.output(msg.out);
+			else {
+				//msg.out = msg.out + (new Error().stack).toString();
+				coreThreadEventer.postMessage(msg);
+			}
+		}
+		//reply(msg.out);
+		return;
+	} else if (msg.op === "on") {
+		var onEnt = (msg.Λ && makeEntity(msg.Λ)) || entity;
+		switch (true) {
+			// this is an internal function, and object does not get
+			// notified for events.
+			case "enable" === msg.on:
+				var onEnt = msg.args[0] && makeEntity(msg.args[0]);
+				onEnt.enable( msg.args[1] );
+				return;
+			case "name" === msg.on:
+				onEnt.cache.name = msg.args;
+				myName = msg.args;
+				//msg.args = makeEntity( msg.args)
+				break;
+			case "rebase" === msg.on:
+				msg.args = makeEntity(msg.args);
+				console.log( "rebase function not functioning");
+				break;
+			case "debase" === msg.on:
+				msg.args = makeEntity(msg.args);
+				console.log( "debase function not functioning");
+				break;
+			case "joined" === msg.on:
+				msg.args = makeEntity(msg.args);
+				onEnt.cache.near.joined( msg.args );
+				break;
+			case "parted" === msg.on:
+				msg.args = makeEntity(msg.args);
+				onEnt.cache.near.part(msg.args);
+				break;
+			case "placed" === msg.on:
+				msg.args = makeEntity(msg.args);
+				onEnt.cache.near.placed(msg.args);
+				break;
+				/*
+			case "displaced" === msg.on:
+				//msg.args = makeEntity( msg.args );
+				break;
+				*/
+			case "stored" === msg.on:
+				onEnt.cache.near.store(makeEntity(msg.args));
+				
+				break;
+				
+			case "lost" === msg.on:
+				msg.args = makeEntity(msg.args);
+				const real = onEnt.cache.real;
+				if( real ) {
+					onEnt.cache.near.lose(msg.args);
+					doLog( "cache now is:",myName, onEnt.cache.real );
+				}
+				break;
+				
+			case "attached" === msg.on:
+				msg.args = makeEntity(msg.args);
+				onEnt.cache.near.attached(msg.args);
+				break;
+			case "detached" === msg.on:
+				msg.args = makeEntity(msg.args);
+				onEnt.cache.near.detached(msg.args);
+				break;
+			case "created" === msg.on:
+				msg.args = makeEntity(msg.args);
+				//console.log( "Created Entty needs to be 'created'", onEnt, msg );
+				if( onEnt.cache.near )
+					onEnt.cache.near.created( msg.args );
+				break;
+			case "newListener" === msg.on:
+				//msg.args = makeEntity( msg.args );
+				break;
+			default:
+				console.log( "Event not handled:", msg );
+				break;
+		}
+		//console.log( "Emit event:", msg.on, msg.args );
+		return self.emit_(msg.on, msg.args );
+	}
+	//else
+	//	doLog("will it find", msg, "in", pendingOps);
+
+	var responseId = ("id" in msg) && pendingOps.findIndex(op => op.id === msg.id);
+	if (responseId >= 0) {
+		var response = pendingOps[responseId];
+		//doLog( "Will splice...", responseId, msg, pendingOps)
+		pendingOps.splice(responseId, 1);
+		if (msg.op === 'f' || msg.op === 'g' || msg.op === 'e' || msg.op === 'h') {
+			response.resolve(msg.ret);
+		} else if (msg.op === 'error') {
+			//_debug_commands && 
+			console.log( "command Reject.", msg, response);
+			response.reject(msg.error);
+		}
+	} else {
+		if (msg.op !== "run")
+			doLog("didn't find matched response?", msg.op, msg);
+	}
+
+}
+
+/*
+process.stdin.on('data', (chunk) => {
+	const string = chunk.toString()
+	// this is unused in the general case now
+	// preivously used stdin for commands
+	// but some configured objects use it for command input.
+	//console.warn("Sandbox stdin input: ", chunk, string);
+})
+*/
+
+function makeEntity(Λ) {
+	if (Λ instanceof Promise) return Λ.then(Λ_1 => { console.log("MAKE PROMSIED ENTITY:", Λ, Λ_1 ); return makeEntity(Λ_1) });
+	{
+		let tmp = objects.get(Λ);
+		if (tmp) {
+			//console.trace( "got entity for:", Λ);
+			return tmp;
+		}
+	}
+	//console.trace( "make entity for:", Λ);
+	var nameCachePromise;
+	var descCachePromise;
+	var nearCachePromise;
+	var nearCache;
+	var roomCachePromise;
+	const e = {
+		Λ: Λ
+		, watched : false
+		//, send( msg ){ coreThreadEventer.postMessage( msg ); }
+		, post(name, ...args) {
+			return new Promise((resolve, reject) => {
+				const thisId = mid++;
+				coreThreadEventer.postMessage({ op: 'e', o: Λ, id: thisId, e: name, args: args });
+				pendingOps.push({ id: thisId, cmd: name, resolve: resolve, reject: reject });
+			});
+		}
+		, postGetter(name) {
+			return new Promise((resolve, reject) => {
+				const thisId = mid++;
+				coreThreadEventer.postMessage({ op: 'h', o: Λ, id: thisId, h: name });
+				pendingOps.push({ id: thisId, cmd: name, resolve: resolve, reject: reject });
+			})
+		},
+		drop(thing) { return e.post("drop", thing.Λ); },
+		enter(into) { return self.post("enter",  into.Λ); },
+		leave(to) { return self.post("leave",  to.Λ); },
+		escape() { return self.post("escape"); },
+		store(thing) { return e.post("store", thing.Λ); },
+		grab(target) {
+			return e.post("grab", target.Λ);
+		},
+		hold(target) {
+			return e.post("hold", target.Λ);
+		},
+		cache: {
+			get real(){
+				return nearCache;
+			},
+			near: {
+				// this turns out to be the even handling interface.
+			}, 
+			within:null,
+		},
+		attach(toThing) {
+			if ("string" !== typeof toThing) toThing = toThing.Λ;
+			return e.post("attach", toThing);
+		},
+		detach(fromThing) {
+			if ("string" !== typeof fromThing) fromThing = fromThing.Λ;
+			return e.post("detach", fromThing);
+		},
+		save() {
+			return e.post("save");
+		},
+		enable( ability ) {
+			if( ability.args ) {
+				self[ability.method] = new f( ability.args, ability.code );				
+			} else {
+				const getter = new f( 'val', ability.code );
+				Object.defineProperty(self, ability.method, { configurable:true, enumerable:true, get: getter, set: getter });
+			}
+		},
+		disable( ability ) {
+			delete self[ability.method];
+		},
+		get name() {
+			//console.log( "Get name:", e, nameCachePromise );
+			if (nameCachePromise) return nameCachePromise;
+			return nameCachePromise = (e.postGetter("name").then((name)=>{if( e === entity ) myName = name; return name;}));
+		},
+		get description() {
+			if (descCachePromise) return descCachePromise;
+			return descCachePromise = e.postGetter("description");
+		},
+		/*
+		get postState() {
+			return this.state;
+		},
+		get state() {
+			return this.state;
+		},
+		*/
+		get contents() {
+			if (nearCache) {
+				try {
+					console.log("Returning resolved nearCached");
+				} catch (err) {
+					console.log("BLAH:", err);
+				}
+				return Promise.resolve(nearCache.get("contains"));
+			}
+			return this.nearObjects.then(nearCache => nearCache.get("contains"));
+		},
+		get container() {
+			doLog( myName, "thread getting container", e.name );
+			return e.postGetter("container").then((c) => {
+				c.at = makeEntity(c.at);
+				c.parent = makeEntity(c.parent);
+				for (let path = c.from; path; path = path.from) {
+					path.at = makeEntity(path.at);
+					path.parent = makeEntity(path.parent);
+				}
+				return c;
+			})
+		},
+		get within() { 
+			if( roomCachePromise ) return roomCachePromise;
+			return roomCachePromise = e.postGetter("room").then(id=>{
+				return e.cache.within = makeEntity(id.parent.Λ)
+			 })
+		},
+		get holding() {
+			return e.nearObjects.then(near => near.get("holding")  );
+		},
+
+		get nearObjects() {
+			if (nearCachePromise) {
+				//console.trace( myName, e.name, "Should just naturally be a promise we can return...", nearCachePromise );
+				return nearCachePromise;
+			}
+			//doLog( "sandboxPrerun:This is requesting nearObjects from the other side..." );
+			return ( nearCachePromise = this.postGetter("nearObjects") ).then(result => {
+				nearCache = result;				
+				result.forEach((list, key) => {
+					if( list )
+						list.forEach((name, i) => {
+							list.set(i, makeEntity(name));
+						});
+				});
+				return result;
+			})
+		},
+		idGen() {
+			return generator();
+		},
+		run(file, code) {
+			if (!code) {
+				console.trace("Please pass file and code");
+				code = file;
+				file = { path: "?", src: "Eval" };
+			}
+			return e.post("run", file, code)
+		},
+		wake() {
+			return e.post("wake");
+		},
+		require(src) {
+			//_debug_requires && 
+			//doLog(" ---- thread side require:", nameCache, src, codeStack);
+			return e.post("require", src)
+				.then( result=>{
+					//console.log( "Finally result should come from codestack:", codeStack, result);
+					if( "number" === typeof result )
+						return codeStack[result].result
+					return result;
+				})
+				.catch(err => {
+						console.log( "sandboxPrerun:require error:",(err)) ;
+						/// logs into server....
+						//sandbox.io.output("sandboxPrerun:require error:",(err))
+				});
+		},
+		idMan: {
+			//sandbox.require( "id_manager_sandbox.js" )
+			ID(a) {
+				return e.post("idMan.ID", a);
+			}
+		},
+		ignore(a) {
+			e.post("ignore", a.Λ.toString());
+			a.watched = false;
+		},
+		watch(a) {
+			e.post("watch", a.Λ.toString());
+			a.watched = true;
+		}
+	};
+	e.require.resolve = function(a) {
+		return a;
+	};
+	e.cache.near.invalidate = (e) => (nearCachePromise = nearCache = null);
+
+	// my room changes...  this shodl clear cache
+	e.cache.near.displaced = ((e) => ((roomCache = null),(nearCachePromise = nearCache = null)));
+	e.cache.near.placed = ((ent) => ((roomCache = ent,roomCachePromise=Promise.resolve(e)),(nearCachePromise = nearCache = null)));
+
+	e.cache.near.store = ((ent) => (!!nearCache) && nearCache.get("contains").set(ent.Λ.toString(), ent));
+	e.cache.near.lose = ((ent) => (!!nearCache) && (e.ignore(ent), nearCache.get("contains").delete(ent.Λ.toString())) );
+
+	e.cache.near.joined = ((ent) => (!!nearCache) && nearCache.get("near").set(ent.Λ.toString(), ent));
+	e.cache.near.part = ((ent) => (!!nearCache) && (e.ignore(ent), nearCache.get("near").delete(ent.Λ.toString())));
+
+	e.cache.near.attached = ((ent) => (!!nearCache) && nearCache.get("holding").set(ent.Λ.toString(), ent));
+	e.cache.near.detached = ((ent) => (!!nearCache) && (e.ignore(ent), nearCache.get("holding").delete(ent.Λ.toString())));	
+
+	e.cache.near.created = ((e2) => e2.name.then( e2Name=>{
+		//console.log( "CREATED EVENT:", e.name, e2Name );
+	}) );
+/*
+	if (objects.size){ // first object is myself; don't watch self.
+		//doLog( "Posting watch 1..." );
+		//e.name.then( (name)=>doLog( "Creating object:, auto watching:", name, entity.name ) );
+
+		// I don't need to watch things i haven't even looked at either...
+		//e.watch( e );
+	}
+	// don't auto watch every object's root container....
+	if( !remotes /*&& ( e.container !== entity && !e.container.watched )* / ) {
+		//doLog( "Posting watch 2..." );
+		//e.name.then( name=>doLog( "Auto followed to container",name) );
+		//e.postGetter("container");
+	} else 
+		doLog( "sandboxPrerun:while re-posting is harmless, it is extra overhead (not watching)(or is already THE object)")
+*/
+	objects.set(Λ, e);
+	
+	return e;
+}
+
+var required = [];
+
+var fillSandbox = {
+	Λ: Λ
+	, entity: entity
+	, waiting: []
+	//, module: { paths: [codeStack.length ? codeStack[codeStack.length - 1].file.path : module.path], parent: true }
+	//, Function : Function
+	//, eval: eval
+	, post(name, ...args) {
+		const thisId = mid++;
+		//process.stdout.write( `{op:'f',id:${mid++},f:'${name}',args:${JSOX.stringify(args)}}` );
+		return new Promise((resolve, reject) => {
+			pendingOps.push({ id: thisId, cmd: name, resolve: resolve, reject: reject });
+			coreThreadEventer.postMessage({ op: 'f', id: thisId, f: name, args: args });
+		});
+		/*block*/
+	}
+	, run(line) {
+		return vmric(line, sandbox);
+	}
+	, async postGetter(name, ...args) {
+		//process.stdout.write( `{op:'g',id:${mid++},g:'${name}'}` );
+		var p = new Promise((resolv, reject) => {
+			const thisId = mid++;
+			coreThreadEventer.postMessage({ op: 'g', id: thisId, g: name });
+			pendingOps.push({ id: thisId, cmd: name, resolve: resolv, reject: reject });
+		});
+		return p;
+		/*block*/
+	}
+	, async require(args, path) {
+		var builtin = builtinModules.find(m => args === m);
+		if (builtin) {
+			doLog("Including native node builtin module:", args);
+			return builtinModules.require(args);
+		}
+		if (args.includes("undefined"))
+			doLog("Failed!", args);
+			
+		var prior_execution = codeStack.find(c => c.file.src === args);
+		if (prior_execution) {
+			return prior_execution.result;
+		}
+		{
+			var prior = (required.find(r => r.src === args));
+			if (prior) {
+				return prior.object;
+			}
+		}
+		pendingRequire = true;
+		//console.log( "posting require...", args );
+		return self.post("require", {src:args
+		          ,from:path
+				  ,runId:codeStack.length?codeStack[codeStack.length-1].id:undefined} )
+		    .then(ex => {
+			if( "number" === typeof ex ){
+				var ex3 = codeStack[ex].result;
+				//doLog( "Require finally resulted?",args, ex, ex3 );
+				required.push({ src: args, object: ex3 });
+				return ex3;
+			} else {
+				console.log("Unhandled Require result:", ex, args );
+			}
+		}).catch(err => doLog("Require failed:", err));
+	}
+	//, Buffer: Buffer
+	, async create(a, b, c) {
+		//console.log( "Posting create... ", a, b );
+		return self.post("create", a, b).then(
+			(val) => {
+				//console.log( "Create responded.", val );
+				val = makeEntity(val);
+				if ("string" === typeof c) {
+					return val.post("wake").then(() => {
+						return val.post("postRequire", c).then((result) => {
+							return val;
+						})
+					});
+				}
+				else {
+					return val;
+				}
+			}
+		);
+	}
+	, leave(...args) { return self.post("leave",  ...args); }
+	, enter(...args) { return self.post("enter",  ...args); }
+	, grab(thing) { return entity.grab(thing) }
+	, hold(thing) { return entity.hold(thing) }
+	// has("a").then(a=>console.log(a)).catch( ()=>console.log( "NO" ) );
+	, has(thing) { return entity.nearObjects.then(near=> new Promise( (res,rej)=>{
+		let checks = 0;
+		//console.log( "got near object, looking...", near, checks ); 
+		try {
+		near.get("contains" ).forEach( content=>{
+			//  console.log( "Contains is empty??", content );
+			checks++;
+			content.name.then( name=>{
+				if( name === thing)
+					res(content);
+				else if( !(--checks))
+					rej();
+			} );
+		} );
+	} catch(err){
+		console.log( "ERR:", err );
+	}
+		{
+			console.log(  " checks,... and reject.", check ) ;
+			if( !checks )
+				rej();
+		} })) }
+	, drop(a) { return entity.drop(a) }
+	, store(thing) { return entity.store(thing) }
+	//, crypto: crypto
+	//, config(...args) { returnpost("config",...args); })(); }  // sram type config; reloaded at startup; saved on demand
+	, global: null
+	, scripts: { code: [], index: 0, push(c) { this.index++; this.code.push(c); } }
+	, _timers: null
+	, _module: {
+		filename: "internal"
+		, file: "memory://"
+		, parent: null
+		, paths: ["."]
+		, exports: {}
+		, loaded: false
+		, rawData: ''
+		, includes: []
+	}
+
+	, get now() { return new Date().toString() }
+	, get name() { return entity.name }
+	, get desc() { return entity.description }
+	, get description() { return entity.description }
+	, get holding() { return entity.nearObjects.then(near => near.get("holding")); }
+	, get container() { 
+		//doLog( "Getting container..."+ new Error().stack);
+		return self.postGetter("container").then( container=>{
+			container.parent = makeEntity(container.parent);
+			container.at = makeEntity(container.at);
+			container.from = container.from && makeEntity(container.from);
+			return container;
+		} );
+	}
+	, get near() {
+		//console.log( "'near' getter is called which returns a promise...");
+		return entity.nearObjects.then( near => near.get("near") );
+	}
+	, get exits() {
+		//doLog( "Getting exits..."+ new Error().stack);
+		{
+			return (async () => {
+				var nearList = await self.postGetter("exits");
+				nearList.forEach((near, i) => {
+					nearList[i] = makeEntity(near);
+				});
+				return nearList;
+			})()
+		}
+	}
+	, get contains() { return  self.postGetter("contents"); }
+	//, get room() { return o.within; }
+	//, idGen(cb) {
+	//	doLog("This ISGEN THEN?")
+	//	return idMan.ID(Λ, Λ.maker, cb);
+	//}
+/*
+	, console: {
+		log(...args) {
+			if (self.io.output)
+				self.io.output(util.format(...args) + "\n");
+			else
+		},
+		warn(...args) { return doLog(util.format("WARNING:", (args)) )},
+		trace: (...args) => { console.log(...args, "Call Stack:", new Error('').stack); }
+	}
+*/
+	, io: {
+		output: null,
+		addInterface(name, iName, iface) {
+			console.log( "Adding a driver", name, iName, iface ) ;
+			addDriver(self, name, iName, iface);
+		},
+		getInterface(object, name) {
+			var o = object;
+			console.log("OPEN DRIVER CALLED!", new Error().stack, this, object, name );
+			var driver = drivers.find(d => (o === d.object) && (d.name === name));
+			if (driver)
+				return driver.iface;
+
+			var iface;
+			// pre-allocate driver and interface; it's not usable yet, but will be?
+			drivers.push({ name: name, iName: null, orig: null, iface: iface = {} });
+			return iface;
+		}
+		, send(target, msg) {
+			doLog("Send does not really function yet.....");
+			//o.Λ
+			//doLog( "entity in this context:", target, msg );
+			var o = target;
+			if (o)
+				self.emit("message", msg);
+			//entity.gun.get(target.Λ || target).put({ from: o.Λ, msg: msg });
+		}
+	}
+	, events: {}
+	,  // events_ is the internal mapping of expected parameters from the core into the thread.
+	events_: {
+
+	}
+	, on(event, callback) {
+		self.emit("newListener", event, callback);
+		if (!(event in self.events))
+			self.events[event] = [callback];
+		else
+			self.events[event].push(callback);
+	}
+	, off(event, callback) {
+		if (event in self.events) {
+			var i = self.events[event].findIndex((cb) => cb === callback);
+			if (i >= 0)
+				self.events[event].splice(i, 1);
+			else
+				throw new Error("Event already removed? or not added?", event, callback);
+		}
+		else
+			throw new Error("Event does not exist", event, callback);
+		self.emit("removeListener", event, callback);
+	}
+	, addListener: null
+	, emit_(event, args) {
+		if (args instanceof Array)
+			args.forEach((arg, i) => args[i] = makeEntity(arg));
+		else if("string" === typeof args )
+			args = makeEntity(args);
+		return this.emit(event, args);
+	}
+	, emit(event, ...args) {
+		if (event in self.events) {
+			self.events[event].forEach((cb) => cb(...args));
+		}
+	}
+	, ing(event, ...args) {
+		if (event in self.events) ;
+	}
+	, setTimeout(cb, delay) {
+		let timerObj = { id: timerId++, cb: cb, next: this._timers, pred: null, dispatched: false, to: null };
+		if (this._timers)
+			this._timers.pred = timerObj;
+		this._timers = timerObj;
+		const cmd = `{let tmp=_timers;
+            while( tmp && tmp.id !== ${timerObj.id})
+                tmp = tmp.next;
+            if( tmp ) {
+                tmp.cb();
+                tmp.dispatched = true;
+                if( tmp.next ) tmp.next.pred = tmp.pred;
+                if( tmp.pred ) tmp.pred.next = tmp.next; else _timers = tmp.next;
+            }
+        }`;
+		timerObj.to = _setTimeout(() => {
+			vmric(cmd, sandbox);
+		}, delay);
+		//timerObj.to.unref();
+		return timerObj;
+	}
+	, setInterval(cb, delay) {
+		let timerObj = { id: timerId++, cb: cb, next: this._timers, pred: null, dispatched: false, to: null };
+		if (this._timers)
+			this._timers.pred = timerObj;
+		this._timers = timerObj;
+		const cmd = `let tmp=_timers;
+            while( tmp && tmp.id !== ${timerObj.id})
+                tmp = tmp.next;
+            if( tmp ) {
+                tmp.cb();
+            }
+        `;
+		timerObj.to = setInterval(() => {
+			vmric(cmd, sandbox);
+
+		}, delay);
+		return timerObj;
+	}
+	, setImmediate(cb) {
+		let timerObj = { id: timerId++, cb: cb, next: this._timers, pred: null, dispatched: false, to: null };
+		if (this._timers)
+			this._timers.pred = timerObj;
+		this._timers = timerObj;
+		const cmd = `let tmp=_timers;
+            while( tmp && tmp.id !== ${timerObj.id})
+                tmp = tmp.next;
+            if( tmp ) {
+                tmp.cb();
+                tmp.dispatched = true;
+                if( tmp.next ) tmp.next.pred = tmp.pred;
+                if( tmp.pred ) tmp.pred.next = tmp.next; else _timers = tmp.next;
+            }
+        `;
+		timerObj.to = setImmediate(() => {
+			vmric(cmd, sandbox);
+
+		});
+		return timerObj;
+	}
+	, async getObjects(me, src, all, callback) {
+		let disableParticples = false;
+
+		if( "object" === typeof all ) {
+			disableParticples = all.disableParticples;
+			all = all.all;
+		}
+		if( "function" === typeof all ){
+			callback = all;
+			all = true;
+			console.log( new Error("Please update caller of getObjects:").stack );
+		}
+		let object = src && src[0];
+		if (!src) all = true;
+		const awaitList = [];
+		let name = object && object.toString();
+		let count = 0;
+		let run = true;
+		let tmp;
+
+		//console.trace( "args", me, "src",src, "all",all, "callback:",callback )
+		if (typeof all === 'function') {
+			callback = all;
+			all = false;
+		}
+
+		if (object && name == 'all' && object.next && object.next.text == '.') {
+			console.log( "all. prefix");
+			all = true;
+			object = object.next.next;
+		}
+		if (object && (tmp = Number(name)) && object.next && object.next.text == '.') {
+			console.log( "#. prefix");
+			object = object.next.next;
+			name = object.toString();
+			count = tmp;
+		}
+		//console.log( "Looking for:", name, disableParticples );
+		if( !disableParticples) {
+			if (src && src.length > 1 && src[1].text === "in") {
+				src = src.slice(2);
+				console.log( "There was an in parameter?" );
+				return getObjects(me, src, all, (o, oName, location, moreargs) => {
+					if( o ) {
+						//o = objects.get(o.me);
+						console.log("in Found:", o.name, name);
+						o.contents.then( contents=>
+							contents.forEach( content => {
+							//if (value === me) return;
+							content.name.then( contentName => {
+								if (!object || (contentName) === name) {
+									console.log("found object", contentName);
+									if (count) {
+										if( --count ) // do run on count to 0
+											return;
+										run = true;
+									}
+									if (run) {
+										console.log("and so key is ", location+"contained", contentName);
+										if( callback(content, content.name, location + ",contains", src.splice(1)) === false )
+											count++;
+										run = all;
+									}
+								}
+							} );
+						}));
+					}
+				})
+			}
+			if (src && src.length > 1 && (src[1].text == "on" || src[1].text == "from" || src[1].text == "of")) {
+				src = src.slice(2);
+				return getObjects(me, src, all, (o, oName, location, moreargs) => {
+					if( !location ) return; // done.
+					//doLog( "Found last part?", oName );
+					return o.nearObjects.then(nearList => {
+						nearList.get('holding').forEach(content => {
+							content.name.then( contentName => {
+								if (!object || contentName === name) {
+									//doLog("found object", name)
+									if (count) {
+										if( --count ) // do run on count to 0
+											return;
+										run = true;
+									}
+									if (run) {
+										doLog("on and so key is ", location+",holding", name);
+										var r = callback(content, contentName, location + ",holding", src.splice(1));
+										if( r === false ) count++;
+										if (r) awaitList.push(r);
+										run = all;
+									}
+								}
+							});
+						});
+					})
+				})
+			}
+		}
+		//doLog( "Simple object lookup; return promise in getObjects()");
+		return new Promise((res) => {
+			me.nearObjects.then((checkList,location) => {
+				var names = [];
+				checkList.forEach(function (value, location) {
+					// holding, contains, near
+					//doLog("checking key:", run, location, value)
+					if (!value) return;
+					value.forEach(function (value, member) {
+						//doLog( "has value" );
+						names.push(value.name.then(name => ({ e: value, l: location, name: name })));
+						//doLog( "Pushed a name as a promise");
+					});
+				});
+				//_debug_near &&console.log( "Names:", names );
+				Promise.all(names).then(names => {
+					names.forEach((check, i) => {
+						if (!run) return;
+						if (check.e === me) return;
+						if (!object || check.name === name) {
+							if (count) {
+								if( --count ){ // 1. and 0. are the same object...{
+									//console.log( "Failing on count" );
+									return;
+								}
+								run = true;
+							}
+							if (run) {
+								var r = callback(check.e, check.name, check.l, src && src.splice(1));
+								//console.log( "Back from callback..." );
+								if( r === false )
+									count++;
+								if (r instanceof Promise ) awaitList.push(r);
+								run = all; // if not all, then no more.
+							}
+						}
+					});
+					callback(null, null, null, []);
+					Promise.all(awaitList).then(res);
+				});
+			});
+		})
+	}
+
+	, clearTimeout(timerObj) {
+		if (!timerObj.dispatched) return; // don't remove a timer that's already been dispatched
+		if (timerObj.next) timerObj.next.pred = timerObj.pred;
+		if (timerObj.pred) timerObj.pred.next = timerObj.next; else _timers = timerObj.next;
+	}
+	, clearImmediate: null
+	, clearInterval: null
+	, JSOX: JSOX$1
+};
+
+
+function finishFill(sandbox) {
+
+	sandbox.clearImmediate = sandbox.clearTimeout;
+	sandbox.clearInterval = sandbox.clearInterval;
+
+
+	sandbox.permissions = {};
+	sandbox.config = {};
+	sandbox.config.run = { Λ: null };
+
+	//entity.idMan.ID( entity.idMan.localAuthKey, o.created_by.Λ, (id)=>{ sandbox.config.run.Λ = id.Λ } );
+	//sandbox.require=  sandboxRequire.bind(sandbox);
+	sandbox.require.resolve = function (path) {
+		var tmp;
+		console.log( "Sandbox has module?", sandbox.module );
+		if (sandbox.module && sandbox.module.paths[sandbox.module.paths.length - 1])
+			tmp = sandbox.module.paths[sandbox.module.paths.length - 1] + "/" + path;
+		else
+			tmp = path;
+		tmp = tmp.replace(/^\.[/\\]/, '');
+		//doLog( "tmp:", tmp );
+		tmp = tmp.replace(/[/\\]\.[/\\]/, '/');
+		var newTmp;
+		//doLog( "tmp:", tmp );
+		while ((newTmp = tmp.replace(/[/\\][^/\\\.]*[/\\]\.\.[/\\]/, '/')) !== tmp) {
+			tmp = newTmp;
+		}
+		//doLog( "tmp:", tmp );
+		tmp = tmp.replace(/[^/\\]*[/\\]\.\.$/, '');
+		return tmp;
+		//return (async () => { return await e.post("resolve",...args); })();
+	};// sandboxRequireResolve.bind( sandbox );
+	sandbox.global = sandbox;
+	sandbox.addListener = sandbox.on;
+	sandbox.removeListener = sandbox.off;
+	sandbox.removeAllListeners = (name) => {
+		Object.keys(self.events).forEach(event => delete sandbox.events[event]);
+	};
+	sandbox.io.addInterface = (a, b, c) => addDriver(self, a, b, c);
+
+	function addDriver(o, name, iName, iface) {
+		var driver = drivers.find(d => d.name === name);
+		if (driver) {
+			doLog("have to emit completed...");
+		}
+		var caller = (driver && driver.iface) || {};
+		var keys = Object.keys(iface);
+		if (remotes.get(o)) {
+			keys.forEach(key => {
+				caller[key] = function (...argsIn) {
+					var args = "";
+					var last = argsIn[argsIn.length - 1];
+					argsIn.forEach(arg => {
+						if (arg === last) return; // don't pass the last arg, that's for me.
+						if (args.length) args += ",";
+						args += JSOX$1.stringify(arg);
+					});
+					self.idMan.ID(o.Λ, me, (id) => {
+						var pending = { id: id, op: "driver", driver: name, data: { type: "driverMethod", method: key, args: args } };
+						o.child.send(pending);
+						childPendingMessages.set(id, pending);
+					});
+				};
+			});
+		}
+		else
+			keys.forEach(key => {
+				var constPart = `{
+                    ${iName}[${key}](`;
+				caller[key] = function (...argsIn) {
+					var args = "";
+					var last = argsIn[argsIn.length - 1];
+					argsIn.forEach(arg => {
+						if (arg == last) return; // don't pass the last arg, that's for me.
+						if (args.length) args += ",";
+						args += JSOX$1.stringify(arg);
+					});
+					if ("function" == typeof last) {
+						o.sandbox._driverDb = last;
+						args += ",_driverCb)";
+					}
+					else
+						args += JSOX$1.stringify(last) + ")";
+					// this should not be replayed ever; it's a very dynamic process...
+					//scripts.push( { type:"driverMethod", code:constPart + args } );
+					vmric(constPart + args, sandbox);
+				};
+			});
+		doLog("adding object driver", name);
+		drivers.push({ name: name, iName: iName, orig: iface, iface: caller, object: o });
+		return driver; // return old driver, not the new one...
+	}
+
+	/* Seal Sandbox */
+	["JSOX", "events", "crypto", "_module", "console", "Buffer", "require", "process", "fs", "vm"].forEach(key => {
+		if (key in sandbox)
+			Object.defineProperty(sandbox, key, { enumerable: false, writable: true, configurable: false });
+	});
+
+}
+
+finishFill(fillSandbox);
+
+
+Object.getOwnPropertyNames(fillSandbox).forEach(function (prop) {
+	var descriptor = Object.getOwnPropertyDescriptor(fillSandbox, prop);
+	Object.defineProperty(ws, prop, descriptor);
+});
+
+
+coreThreadEventer.postMessage({ op: 'initDone' });
+coreThreadEventer.on("message", processMessage);
+
+}
+/*
+function Function() {
+    throw new Error( "Please use other code import methods.");
+}
+function eval() {
+    throw new Error( "Please use other code import methods.");
+}
+*/
+
+const sandbox = {
+    Λ : localStorage.getItem( "Λ" )/*Λ*/
+	, config : null
+	, sandbox : null
+	, Function : Function
+	, eval: eval
+	, require(a) {
+			return import(a);
+			//require
+		}
+	, module:null//module
+	, storage: null // privateStorage
+	, disk : null
+	, nativeDisk : null //physicalDisk
+	, console:console
+	, idGen : idGen
+/*
+	, _setTimeout : setTimeout
+	, _clearTimeout : clearTimeout
+	, _setInterval : setInterval
+*/
+	, onInit(cb) {
+	}
+	//, Buffer: Buffer
+	, vmric(a,b) {
+		const f = new Function( a );
+		f.call( sandbox, b );
+		//vm.runInContext(a,sandbox,b)
+	} 
+	//, crypto: crypto
+	//, config(...args) { returnpost("config",...args); })(); }  // sram type config; reloaded at startup; saved on demand
+};
+//console.log( "Adding u8xor?", sandbox.idGen );
+sandbox.sandbox = sandbox;
+
+/* Seal Sandbox */
+["require","eval", "Function", /*"module",*/ "console", "process", /*"require",*/ "sandbox", "fs", "vm"].forEach(key => {
+    if( key in sandbox )
+	    Object.defineProperty(sandbox, key, { enumerable: false, writable: true, configurable: false });
+});
+
+/*
+
+style classes
+    frameContainer - the outer frame
+    frameCaption - the top caption of the frame
+    frameContent - the container of the frame's future content.
+    frameClose - style of the upper close Item.
+    captionButton - this is a button appearin in the caption (close)
+    
+
+var popup = popups.create( "caption" );
+popup.show();
+popup.hide();
+popup.caption = "New Caption";
+popup.divContent  // insert frame content here
+
+*/
+
+//import {JSOX} from "jsox";
+//import {JSOX} from "../../jsox/lib/jsox.mjs";
+
+
+const popups = {
+	defaultDrag : true,
+	autoRaise : true,
+	create : createPopup,
+	simpleForm : createSimpleForm,
+	simpleNotice : createSimpleNotice,
+        makeList : createList,
+        makeCheckbox : makeCheckbox,
+        makeNameInput : makeNameInput,  // form, object, field, text; popup to rename
+        makeTextInput : makeTextInput,  // form, object, field, text
+        makeTextField : makeTextField,
+        makeButton : makeButton,
+        makeChoiceInput : makeChoiceInput,// form, object, field, choiceArray, text
+        makeDateInput : makeDateInput,  // form, object, field, text
+	strings : { get(s) { return s } },
+	setClass: setClass,
+	toggleClass: toggleClass,
+	clearClass:clearClass,
+	createMenu : createPopupMenu,
+};
+
+const globalMouseState = {
+        activeFrame : null
+    };
+var popupTracker;
+
+function addCaptionHandler( c, popup_ ) {
+	var popup = popup_;
+	if( !popup )
+	 	popup = createPopup( null);
+
+
+	var mouseState = {
+		frame:popup.divFrame,
+		x:0,y:0,
+		dragging:false
+	};
+	if( popups.autoRaise )
+	popup_.divFrame.addEventListener( "mousedown", (evt)=>{
+		popupTracker.raise( popup );
+	} );
+
+	function mouseHandler(c,state) {
+		
+		var added = false;
+		function mm(evt){
+			const state = globalMouseState.activeFrame;
+			if( state ) {
+   	  		if( state.dragging ) {
+				evt.preventDefault();
+				var pRect = state.frame.getBoundingClientRect();
+				//var x = evt.clientX - pRect.left;
+				//var y = evt.clientY - pRect.top;
+				var x = evt.x - pRect.left;
+				var y = evt.y - pRect.top;
+				state.frame.style.left =parseInt(state.frame.style.left) + (x-state.x);
+				state.frame.style.top= parseInt(state.frame.style.top) +(y-state.y);
+				if( state.frame.id ) {
+					localStorage.setItem( state.frame.id + "/x", popup.divFrame.style.left );
+					localStorage.setItem( state.frame.id + "/y", popup.divFrame.style.top );
+				}
+			}
+			}
+		}
+		function md(evt){
+			//evt.preventDefault();
+                        if( globalMouseState.activeFrame ) {
+                            return;
+                        }
+			var pRect = state.frame.getBoundingClientRect();
+			popupTracker.raise( popup );
+			//state.x = evt.clientX-pRect.left;
+			//state.y = evt.clientY-pRect.top;
+			state.x = evt.x-pRect.left;
+			state.y = evt.y-pRect.top;
+                        globalMouseState.activeFrame = state;
+			state.dragging = true;
+			if( !added ) {	
+				added = true;
+				document.body.addEventListener( "mousemove", mm );
+				document.body.addEventListener( "mouseup", mu );
+			}
+		}
+		function mu(evt){
+			evt.preventDefault();
+                        globalMouseState.activeFrame = null;
+			state.dragging = false;
+			added = false;
+			document.body.removeEventListener( "mousemove", mm );
+			document.body.removeEventListener( "mouseup", mu );
+		}
+
+		c.addEventListener( "mousedown", md );
+		c.addEventListener( "mouseup", mu );
+		c.addEventListener( "mousemove", mm );
+
+		c.addEventListener( "touchstart", (evt)=>{
+			evt.preventDefault();
+			var pRect = state.frame.getBoundingClientRect();
+			popupTracker.raise( popup );
+			//state.x = evt.clientX-pRect.left;
+			//state.y = evt.clientY-pRect.top;
+			state.x = evt.touches[0].clientX-pRect.left;
+			state.y = evt.touches[0].clientY-pRect.top;
+			state.dragging = true;
+			
+		});
+		c.addEventListener( "touchmove", (evt)=>{
+			evt.preventDefault();
+			if( state.dragging ) {
+				const points = evt.touches;
+				var pRect = state.frame.getBoundingClientRect();
+				var x = points[0].clientX - pRect.left;
+				var y = points[0].clientY - pRect.top;
+				state.frame.style.left =parseInt(state.frame.style.left) + (x-state.x);
+				state.frame.style.top= parseInt(state.frame.style.top) +(y-state.y);
+				if( state.frame.id ) {
+					localStorage.setItem( state.frame.id + "/x", popup.divFrame.style.left );
+					localStorage.setItem( state.frame.id + "/y", popup.divFrame.style.top );
+				}
+			}
+			
+		});
+		c.addEventListener( "touchend", (evt)=>{
+			evt.preventDefault();
+			popupTracker.raise( popup );
+			state.dragging = false;
+			
+		});
+
+	}
+
+	if( popups.defaultDrag ) {
+		mouseHandler(c, mouseState );
+
+		mouseHandler(popup_.divFrame, mouseState );
+	}
+
+}
+
+function initPopupTracker() {
+
+	var tracker = {
+		popups : [],
+		raise( popup ) {
+			var top = tracker.popups.length;
+			var n;
+			var from = Number(popup.divFrame.style.zIndex);
+			if( from === top ) return;
+
+			for( n = 0; n < tracker.popups.length; n++ ) {
+				if( n == popup.index )
+					popup.divFrame.style.zIndex = top;
+				else {
+					var thisZ = Number(tracker.popups[n].divFrame.style.zIndex);
+					if( thisZ > from )
+						tracker.popups[n].divFrame.style.zIndex = Number(tracker.popups[n].divFrame.style.zIndex) - 1;
+				}
+			}
+		},
+		find( id ) {
+			return this.popups.find( popup=>popup.divFrame.id === id );
+		},
+		addPopup(popup) {
+			popup.index = tracker.popups.length;
+			popup.divFrame.style.zIndex = popup.index+1;
+			tracker.popups.push( popup );
+			popup.raise = function() {
+				tracker.raise( popup);
+			};
+		}
+	};
+	return tracker;
+}
+popupTracker = initPopupTracker();
+
+class Popup {
+	popupEvents = {
+		close : [],
+		show : [],
+	};
+	divFrame = document.createElement( "div" );
+	divCaption = document.createElement( "div" );
+        divContent = document.createElement( "div" );
+        divClose = document.createElement( "div" );
+	popup = this;
+
+	constructor(caption_,parent) {
+		this.divFrame.style.left= 0;
+		this.divFrame.style.top= 0;
+		this.divFrame.className = parent?"formContainer":"frameContainer";
+		if( caption_ != "" )
+			this.divFrame.appendChild( this.divCaption );
+		this.divFrame.appendChild( this.divContent );
+		this.divCaption.appendChild( this.divClose );
+
+		this.divCaption.className = "frameCaption";
+		this.divContent.className = "frameContent";
+		this.divClose.className = "captionButton";
+        	popupTracker.addPopup( this );
+           this.caption = caption_;
+                parent = (parent&&parent.divContent) || document.body;
+			parent.appendChild( this.divFrame );
+
+			addCaptionHandler( this.divCaption, this );
+      }
+		set caption(val) {
+			this.divCaption.innerText = val;
+		}
+		center() {
+			var myRect = this.divFrame.getBoundingClientRect();
+			var pageRect = this.divFrame.parentElement.getBoundingClientRect();
+			this.divFrame.style.left = (pageRect.width-myRect.width)/2;
+			this.divFrame.style.top = (pageRect.height-myRect.height)/2;
+		}
+		over( e ){
+			var target = e.getBoundingClientRect();
+			this.divFrame.style.left = target.left;
+			this.divFrame.style.top = target.top;
+		}
+		on(event,cb) {
+			if( cb && "function" === typeof cb )
+				if( this.popupEvents[event] )
+					this.popupEvents[event].push(cb);
+				else
+					this.popupEvents[event] = [cb];
+			else {
+				var cbList;
+				if( cbList = this.popupEvents[event]  ) {
+					cbList.forEach( cbEvent=>cbEvent( cb ));
+				}
+			}
+		}
+		hide() {
+			this.divFrame.style.display = "none";
+		}
+		show() {
+			this.divFrame.style.display = "";
+			//popupTracker.raise( this );
+
+			this.on( "show", true );
+		}
+		move(x,y) {
+			this.divFrame.style.left = x+"%";
+			this.divFrame.style.top = y+"%";
+		}
+	appendChild(e) {
+		return this.divContent.appendChild(e)
+	}
+	remove() {
+		this.divFrame.remove();
+	}
+}
+
+function createPopup( caption ) {
+	return new Popup(caption);
+}
+
+function createSimpleForm( title, question, defaultValue, ok, cancelCb ) {
+	const popup = popups.create( title );
+	popup.on( "show", ()=>{
+		if( "function" === typeof defaultValue ){
+			input.value = defaultValue();
+		}
+		else
+			input.value = defaultValue;
+		input.focus();
+		input.select();
+	});
+	popup.on( "close", ()=>{
+		// aborted...
+		cancel && cancel();
+	});
+
+	var form = document.createElement( "form" );
+	form.className = "frameForm";
+	form.setAttribute( "action", "none" );
+	form.addEventListener( "submit", (evt)=>{
+		evt.preventDefault();
+		popup.hide();
+		ok && ok(input.value);
+	} );	
+	form.addEventListener( "reset", (evt)=>{
+		evt.preventDefault();
+		popup.hide();
+	} );	
+
+	var text = document.createElement( "SPAN" );
+	text.textContent = question;
+	var input = document.createElement( "INPUT" );
+	input.className = "popupInputField";
+	input.setAttribute( "size", 45 );
+	input.value = defaultValue;
+
+	var okay = document.createElement( "BUTTON" );
+	okay.className = "popupOkay";
+	okay.textContent = "Okay";
+	okay.setAttribute( "name", "submit" );
+	okay.addEventListener( "click", (evt)=>{
+		evt.preventDefault();
+		popup.hide();
+		ok && ok( input.value );
+	});
+
+	var cancel = document.createElement( "BUTTON" );
+	cancel.className = "popupCancel";
+	cancel.textContent = "Cancel";
+	cancel.setAttribute( "type", "reset" );
+	cancel.addEventListener( "click", (evt)=>{
+		evt.preventDefault();
+		popup.hide();
+		cancelCb && cancelCb( );
+	});
+
+	popup.divFrame.addEventListener( "keydown", (e)=>{
+		if(e.keyCode==27){
+			e.preventDefault();
+			popup.hide();
+			cancelCb && cancelCb( );
+		}
+	});
+	popup.divContent.appendChild( form );
+	form.appendChild( text );
+	form.appendChild( document.createElement( "br" ) );
+	form.appendChild( input );
+	form.appendChild( document.createElement( "br" ) );
+	form.appendChild( document.createElement( "br" ) );
+	form.appendChild( cancel );
+	form.appendChild( okay );
+	
+	popup.center();
+	popup.hide();
+	return popup;
+}
+
+function makeButton( form, caption, onClick ) {
+
+	var button = document.createElement( "div" );
+	button.className = "button";
+	button.style.width = "max-content";
+	var buttonInner = document.createElement( "div" );
+	buttonInner.className = "buttonInner";
+	buttonInner.style.width = "max-content";
+	buttonInner.innerText = caption;
+
+        button.appendChild(buttonInner);
+
+
+        button.addEventListener( "keydown", (evt)=>{
+		if( evt.key === "Enter" || evt.key === " " ) {
+			evt.preventDefault();
+        	        evt.stopPropagation();
+	                onClick();
+                }
+	} );
+	//var okay = document.createElement( "BUTTON" );
+	//okay.className = "popupOkay";
+	//okay.textContent = caption;
+	button.addEventListener( "click", (evt)=>{
+		evt.preventDefault();
+                onClick();
+	});
+	button.addEventListener( "touchstart", (evt)=>{
+		evt.preventDefault();
+		setClass( button, "pressed" );
+		
+	});
+	button.addEventListener( "touchend", (evt)=>{
+		evt.preventDefault();
+		clearClass( button, "pressed" );
+                onClick();
+		
+	});
+	button.addEventListener( "mousedown", (evt)=>{
+		evt.preventDefault();
+		setClass( button, "pressed" );
+		
+	});
+	button.addEventListener( "mouseup", (evt)=>{
+		evt.preventDefault();
+		clearClass( button, "pressed" );
+		
+	});
+	form.appendChild( button );
+        return button;
+
+}
+
+function createSimpleNotice( title, question, ok, cancel ) {
+    return new SimpleNotice( title, question, ok, cancel );
+}
+
+class SimpleNotice extends Popup {
+	//const popup = popups.create( title );
+	//const show_ = popup.show.bind(popup);
+    	form = document.createElement( "form" );
+	okay = makeButton( form, "Okay", ()=>{
+		popup.hide();
+		ok && ok( );
+	})
+	
+
+    	appendChild( e ) {
+            this.form.insertChild( e, this.okay );
+        }
+        constructor( title, question, ok, cancel ) {
+
+	this.show = function( caption, content ) {
+		if( caption && content ) {
+			popup.divCaption.textContent = caption;
+			text.textContent = content;
+		}
+		else if( caption )
+			text.textContent = caption;
+		show_();
+	};
+
+	popup.on( "show", ()=>{
+		this.okay.focus();
+	});
+	popup.on( "close", ()=>{
+		// aborted...
+		cancel && cancel();
+	});
+
+	var form = document.createElement( "form" );
+	form.className = "frameForm";
+	form.setAttribute( "action", "none" );
+	form.addEventListener( "submit", (evt)=>{
+		evt.preventDefault();
+		popup.hide();
+		//console.log( "SUBMIT?", input.value );
+	} );	
+	form.addEventListener( "reset", (evt)=>{
+		evt.preventDefault();
+		popup.hide();
+	} );	
+
+	var text = document.createElement( "SPAN" );
+	text.className = "noticeText";
+	text.textContent = question;
+
+	
+	this.okay.className += " notice";
+	this.okay.children[0].className += " notice";
+
+
+
+	this.divFrame.addEventListener( "keydown", (e)=>{
+		if(e.keyCode==27){
+			e.preventDefault();
+			this.hide();
+			ok && ok( );
+		}
+	});
+	this.divContent.appendChild( form );
+	form.appendChild( text );
+	form.appendChild( document.createElement( "br" ) );
+	form.appendChild( document.createElement( "br" ) );
+	form.appendChild( this.okay );
+
+	if( cancel )  {
+		let cbut = makeButton( form, "Cancel", ()=>{
+			this.hide();
+			cancel && cancel( );
+		});
+		cbut.className += " notice";
+		cbut.children[0].className += " notice";
+	}
+	this.center();
+	this.hide();
+	return this;
+}
+}
+
+
+
+class List {
+		 selected = null;
+		 groups = [];
+		 itemOpens = false;
+    constructor( parentDiv, parentList, toString )
+        {
+		this.toString = toString;
+		this.divTable = parentDiv;
+                this.parentList = parentList;
+        }
+
+		push(group, toString_, opens) {
+			var itemList = this.divTable.childNodes;
+			var nextItem = null;
+			for( nextItem of itemList) {
+				if( nextItem.textContent > this.toString(group) )
+					break;
+				nextItem = null;
+			}
+			
+			var newLi = document.createElement( "LI" );
+			newLi.className = "listItem";
+			
+			this.divTable.insertBefore( newLi, nextItem );//) appendChild( newLi );
+			newLi.addEventListener( "click", (e)=>{
+				e.preventDefault();
+				if( this.selected )
+					this.selected.classList.remove("selected");
+				newLi.classList.add( "selected" );
+				this.selected = newLi;
+			});
+
+			var newSubList = document.createElement( "UL");
+			newSubList.className = "listSubList";
+			if( this.parentList && this.parentList.parentItem )
+				this.parentList.parentItem.enableOpen( this.parentList.thisItem );
+
+			var treeLabel = document.createElement( "span" );
+			treeLabel.textContent = this.toString(group);
+			treeLabel.className = "listItemLabel";
+			newLi.appendChild( treeLabel );
+
+			//var newSubDiv = document.createElement( "DIV");
+			newLi.appendChild( newSubList );
+			//newSubList.appendChild( newSubDiv);
+			var newRow;
+			var subItems = createList( this, newSubList, toString_, true );
+			this.groups.push( newRow={ opens : false, group:group, item: newLi, subItems:subItems
+                        	, parent:this.parentList
+                                , set text(s) {
+                                	treeLabel.textContent = s;
+                               	}
+                        	, hide() {
+                                	this.item.style.display = "none";
+                                }
+                        	, show() {
+                                	this.item.style.display = "";
+                                }
+                        } );
+			return newRow;
+		}
+		enableOpen(item) {
+			if( item.opens) return;
+			item.opens = true;
+				var treeKnob = document.createElement( "span" );
+				treeKnob.textContent = "-";
+				treeKnob.className = "knobOpen";
+				item.item.insertBefore( treeKnob, item.item.childNodes[0] );
+				treeKnob.addEventListener( "click", (e)=>{
+					e.preventDefault();
+					if( treeKnob.className === "knobClosed"){
+						treeKnob.className = "knobOpen";
+						treeKnob.textContent = "-";
+						item.subItems.items.forEach( sub=>{
+							sub.item.style.display="";
+						});
+					}else {
+						treeKnob.className = "knobClosed";
+						treeKnob.textContent = "+";
+						item.subItems.items.forEach( sub=>{
+							sub.item.style.display="none";
+						});
+
+					}
+				});
+		}
+		enableDrag(type,item,key1,item2,key2) {
+			item.item.setAttribute( "draggable", true );
+			item.item.addEventListener( "dragstart", (evt)=>{
+				//if( evt.dataTransfer.getData("text/plain" ) )
+				//	evt.preventDefault();
+				if( item2 )
+					evt.dataTransfer.setData( "text/" + type, item.group[key1]+","+item2.group[key2]);
+				else
+					evt.dataTransfer.setData( "text/" + type, item.group[key1]);
+				evt.dataTransfer.setData("text/plain",  evt.dataTransfer.getData("text/plain" ) + JSON.stringify( {type:type,val1:item.group[key1],val2:item2 && item2.group[key2] } ) );
+				console.log( "dragstart:", type );
+				if( item )
+					evt.dataTransfer.setData("text/item", item.group[key1] );
+				if( item2 )
+					evt.dataTransfer.setData("text/item2", item2.group[key2] );
+			});
+		}
+		enableDrop( type, item, cbDrop ) {
+			item.item.addEventListener( "dragover", (evt)=>{
+				evt.preventDefault();
+				evt.dataTransfer.dropEffect = "move";
+				//console.log( "Dragover:", evt.dataTransfer.getData( "text/plain" ), evt );
+			});
+			item.item.addEventListener( "drop", (evt)=>{
+				evt.preventDefault();
+				var objType = evt.dataTransfer.getData( "text/plain" );
+				if( "undefined" !== typeof JSOX ) {
+				JSOX.begin( (event)=>{
+					if( type === event.type ){
+						//console.log( "drop of:", evt.dataTransfer.getData( "text/plain" ) );
+						cbDrop( accruals.all.get( event.val1 ) );
+					}
+				} ).write( objType );
+				}
+			});
+		}
+		update(group) {
+			var item = this.groups.find( group_=>group_.group === group );
+			item.textContent = this.toString( group );
+		}
+		get items() {
+			return this.groups;
+		}
+		reset() {
+			while( this.divTable.childNodes.length )
+				this.divTable.childNodes[0].remove();
+		}
+	}
+
+function createList( parent, parentList, toString, opens ) {
+     return new List( parent, parentList, toString, opens );
+}
+
+function makeCheckbox( form, o, field, text ) 
+{
+	let initialValue = o[field];
+	var textCountIncrement = document.createElement( "SPAN" );
+	textCountIncrement.textContent = text;
+	var inputCountIncrement = document.createElement( "INPUT" );
+	inputCountIncrement.setAttribute( "type", "checkbox");
+	inputCountIncrement.className = "checkOption rightJustify";
+	inputCountIncrement.checked = o[field];
+	//textDefault.
+	var onChange = [];
+	var binder = document.createElement( "div" );
+	binder.className = "fieldUnit";
+	binder.addEventListener( "click", (e)=>{ 
+		if( e.target===inputCountIncrement) return; e.preventDefault(); inputCountIncrement.checked = !inputCountIncrement.checked; });
+	inputCountIncrement.addEventListener( "change", (e)=>{ 
+		 o[field] = inputCountIncrement.checked; });
+	form.appendChild(binder );
+	binder.appendChild( textCountIncrement );
+	binder.appendChild( inputCountIncrement );
+	//form.appendChild( document.createElement( "br" ) );
+	return {
+		on(event,cb){
+			if( event === "change" ) onChange.push(cb);
+			inputCountIncrement.addEventListener(event,cb);
+		},
+		get checked() {
+			return inputCountIncrement.checked;
+		},
+		set checked(val) {
+			inputCountIncrement.checked = val;
+		},
+		get value() { return inputCountIncrement.checked; },
+		set value(val) { 
+			o[field] = val;
+			inputCountIncrement.checked = val;
+			onChange.forEach( cb=>cb());
+		 }
+                ,
+                reset(){
+                    o[field] = initialValue;
+                    inputCountIncrement.checked = initialValue;
+                },
+                changes() {
+                    if( o[field] !== initialValue ) {
+                        return text
+                            + popups.strings.get( " changed from " )
+                            + initialValue
+                            + popups.strings.get( " to " )
+                            + o[field];
+                    }
+                    return '';
+				},
+		get style() {
+			return binder.style;
+		}
+	}
+}
+
+function makeTextInput( form, input, value, text, money, percent ){
+	const initialValue = input[value];
+
+	var textMinmum = document.createElement( "SPAN" );
+	textMinmum.textContent = text;
+	var inputControl = document.createElement( "INPUT" );
+	inputControl.className = "textInputOption rightJustify";
+        inputControl.addEventListener( "mousedown", (evt)=>evt.stopPropagation() );
+	//textDefault.
+        function setValue() {
+	if( money ) {
+		inputControl.value = utils.to$(input[value]);
+		inputControl.addEventListener( "change", (e)=>{
+			var val = utils.toD(inputControl.value);
+			input[value] = inputControl.value = utils.to$(val);
+		});
+	} else if( percent ) {
+		inputControl.value = utils.toP(input[value]);
+		inputControl.addEventListener( "change", (e)=>{
+			var val = utils.fromP(inputControl.value);
+			input[value] = inputControl.value = utils.toP(val);
+		});
+	}else {
+		inputControl.value = input[value];
+		inputControl.addEventListener( "input", (e)=>{
+			var val = inputControl.value;
+                        input[value] = val;
+		});
+	}
+        }
+        setValue();
+
+	var binder = document.createElement( "div" );
+	binder.className = "fieldUnit";
+	form.appendChild(binder );
+	binder.appendChild( textMinmum );
+	binder.appendChild( inputControl );
+	return {
+            	addEventListener(a,b) { return inputControl.addEventListener(a,b) },
+		get value () {
+			if( money )
+				return utils.toD(inputControl.value);
+			if( percent ) 
+				return utils.fromP(inputControl.value);
+			return inputControl.value;
+		},
+		set value (val) {
+			if( money )
+				inputControl.value = utils.to$(val);
+			else if( percent )
+				inputControl.value = utils.toP(val);
+			else
+				inputControl.value = val;			
+		},
+                reset(){
+                    input[value] = initialValue;
+                    setValue();
+                },
+                changes() {
+                    if( input[value] !== initialValue ) {
+                        return text
+                            + popups.strings.get( " changed from " )
+                            + initialValue
+                            + popups.strings.get( " to " )
+                            + input[value];
+                    }
+                    return '';
+                }
+	}
+}
+
+
+function makeTextField( form, input, value, text, money, percent ){
+	const initialValue = input[value];
+
+	var textMinmum = document.createElement( "SPAN" );
+	textMinmum.textContent = text;
+	var inputControl = document.createElement( "SPAN" );
+	inputControl.className = "textInputOption rightJustify";
+        inputControl.addEventListener( "mousedown", (evt)=>evt.stopPropagation() );
+	//textDefault.
+        function setValue() {
+	if( money ) {
+		inputControl.value = utils.to$(input[value]);
+		inputControl.addEventListener( "change", (e)=>{
+			var val = utils.toD(inputControl.value);
+			input[value] = inputControl.value = utils.to$(val);
+		});
+	} else if( percent ) {
+		inputControl.value = utils.toP(input[value]);
+		inputControl.addEventListener( "change", (e)=>{
+			var val = utils.fromP(inputControl.value);
+			input[value] = inputControl.value = utils.toP(val);
+		});
+	}else {
+		inputControl.value = input[value];
+		inputControl.addEventListener( "input", (e)=>{
+			var val = inputControl.value;
+                        input[value] = val;
+		});
+	}
+        }
+        setValue();
+
+	var binder = document.createElement( "div" );
+	binder.className = "fieldUnit";
+	form.appendChild(binder );
+	binder.appendChild( textMinmum );
+	binder.appendChild( inputControl );
+	return {
+            	addEventListener(a,b) { return inputControl.addEventListener(a,b) },
+		get value () {
+			if( money )
+				return utils.toD(inputControl.value);
+			if( percent ) 
+				return utils.fromP(inputControl.value);
+			return inputControl.value;
+		},
+		set value (val) {
+			if( money )
+				inputControl.value = utils.to$(val);
+			else if( percent )
+				inputControl.value = utils.toP(val);
+			else
+				inputControl.value = val;			
+		},
+                reset(){
+                    input[value] = initialValue;
+                    setValue();
+                },
+                changes() {
+                    if( input[value] !== initialValue ) {
+                        return text
+                            + popups.strings.get( " changed from " )
+                            + initialValue
+                            + popups.strings.get( " to " )
+                            + input[value];
+                    }
+                    return '';
+                }
+	}
+}
+
+function makeNameInput( form, input, value, text ){
+	const initialValue = input[value];
+	var binder;
+	var textLabel = document.createElement( "SPAN" );
+	textLabel.textContent = text;
+
+	var text = document.createElement( "SPAN" );
+	text.textContent = input[value];
+
+	var buttonRename = document.createElement( "Button" );
+	buttonRename.textContent = popups.strings.get("(rename)");
+	buttonRename.className="buttonOption rightJustify";
+        buttonRename.addEventListener("click", (evt)=>{
+		evt.preventDefault();
+                //title, question, defaultValue, ok, cancelCb
+		const newName = createSimpleForm( popups.strings.get("Change Name")
+                                                 , popups.strings.get("Enter new name")
+                                                 , input[value]
+                                                 , (v)=>{
+                                                 	input[value] = v;
+							text.textContent = v;
+                                                 }
+                                                 );
+                newName.show();
+	} );
+
+	binder = document.createElement( "div" );
+	binder.className = "fieldUnit";
+	form.appendChild(binder );
+	binder.appendChild( textLabel );
+	binder.appendChild( text );
+	binder.appendChild( buttonRename );
+	//binder.appendChild( document.createElement( "br" ) );
+	return {
+		get value() {
+			return text.textContent;
+		}		,
+		set value(val) {
+			text.textContent = val;
+		},
+                reset(){
+                    input[value] = initialValue;
+                    textLabel.textContent = initialValue;
+                },
+                changes() {
+                    if( input[value] !== initialValue ) {
+                        return text
+                            + popups.strings.get( " changed from " )
+                            + initialValue
+                            + popups.strings.get( " to " )
+                            + input[value];
+                    }
+                    return '';
+                }
+	}
+}
+
+	function toggleClass( el, cn )  {
+		if( el.className.includes(cn) )  {
+			el.className = el.className.split( " " ).reduce( (a,el)=> ( el !== cn )?(a.push(el),a):a, [] ).join(' ');
+		}else {
+			el.className += " " + cn;
+		}
+	}
+	function clearClass( el, cn )  {
+		if( el.className.includes(cn) )  {
+			el.className = el.className.split( " " ).reduce( (a,el)=> ( el !== cn )?(a.push(el),a):a, [] ).join(' ');
+		}
+	}
+	function setClass( el, cn )  {
+		if( el.className.includes(cn) )  ;else {
+			el.className += " " + cn;
+		}
+	}
+
+function makeDateInput( form, input, value, text ){
+	const initialValue = input[value];
+	var textMinmum = document.createElement( "SPAN" );
+	textMinmum.textContent = text;
+	var inputControl = document.createElement( "INPUT" );
+	inputControl.className = "textInputOption rightJustify";
+        inputControl.type = "date"; // returns date at midnight UTC not local.
+        inputControl.addEventListener( "mousedown", (evt)=>{
+		evt.stopPropagation(); // halt on this control
+        } );
+
+	//textDefault.
+	if( input[value] instanceof Date ) {
+		inputControl.valueAsDate = input[value];
+        }else
+		inputControl.value = input[value];
+        inputControl.addEventListener( "change",(evt)=>{
+		console.log( "Date type:", inputControl.value, new Date( inputControl.value ) );
+		input[value] = new Date( inputControl.value );
+                // convert to wall clock?  What if browser isn't in birth locale?
+                //input[value].setMinutes( input[value].getTimezoneOffset());
+	} );
+
+	var binder = document.createElement( "div" );
+	binder.className = "fieldUnit";
+	form.appendChild(binder );
+	binder.appendChild( textMinmum );
+	binder.appendChild( inputControl );
+	return {
+            	addEventListener(a,b) { return inputControl.addEventListener(a,b) },
+		get value () {
+			return inputControl.value;
+		},
+		set value (val) {
+                    	//input[value] = val;
+			inputControl.value = val;
+		}
+        	, hide() {
+                	this.item.style.display = "none";
+                }
+        	, show() {
+                	this.item.style.display = "";
+                }
+                , reset(){
+                    input[value] = initialValue;
+                    inputControl.valueAsDate = initialValue;
+                }
+                , changes() {
+                    if( input[value] !== initialValue ) {
+                        return text
+                            + popups.strings.get( " changed from " )
+                            + initialValue
+                            + popups.strings.get( " to " )
+                            + input[value];
+                    }
+                    return '';
+                }
+	}
+}
+
+// --------------- Dropdown choice list ---------------------------
+function makeChoiceInput( form, input, value, choices, text ){
+	const initialValue = input[value];
+
+	var textMinmum = document.createElement( "SPAN" );
+	textMinmum.textContent = text;
+	var inputControl = document.createElement( "SELECT" );
+	inputControl.className = "selectInput rightJustify";
+        inputControl.addEventListener( "mousedown", (evt)=>evt.stopPropagation() );
+
+        for( let choice of choices ) {
+            	const option = document.createElement( "option" );
+                option.text = choice;
+                if( choice === input[value] ) {
+	           inputControl.selectedIndex = inputControl.options.length-1;
+                }
+		inputControl.add( option );
+        }
+	//textDefault.
+	inputControl.value = input[value];
+        inputControl.addEventListener( "change",(evt)=>{
+		const idx = inputControl.selectedIndex;
+		if( idx >= 0 ) {
+			console.log( "Value in select is :", inputControl.options[idx].text );
+			input[value] = inputControl.options[idx].text;
+                }
+	} );
+
+	var binder = document.createElement( "div" );
+	binder.className = "fieldUnit";
+	form.appendChild(binder );
+	binder.appendChild( textMinmum );
+	binder.appendChild( inputControl );
+	return {
+		get value () {
+			return inputControl.value;
+		},
+		set value (val) {
+			inputControl.value = val;
+		},
+                reset(){
+                    input[value] = initialValue;
+                    inputControl.value = initialValue;
+                },
+                changes() {
+                    if( input[value] !== initialValue ) {
+                        return text
+                            + popups.strings.get( " changed from " )
+                            + initialValue
+                            + popups.strings.get( " to " )
+                            + input[value];
+                    }
+                    return '';
+                }
+	}
+}
+
+
+
+//--------------------------- Quick Popup Menu System ------------------------------
+
+const mouseCatcher = document.createElement( "div" );
+document.body.appendChild( mouseCatcher );
+mouseCatcher.addEventListener( "contextmenu", (evt)=>{ evt.preventDefault(); evt.stopPropagation();return false; } );
+mouseCatcher.className = "mouseCatcher";
+
+mouseCatcher.addEventListener( "click", (evt)=>{
+	mouseCatcher.style.visibility = "hidden";
+} );
+
+function createPopupMenu() {
+
+	let keepShow = false;
+
+	function menuCloser() {
+		if( menu.lastShow ) {
+			if( keepShow ) {
+				menu.lastShow = 0;
+				keepShow = false;
+				return;
+			}
+			const now = Date.now();
+			if( ( now - menu.lastShow ) > 500 )  {
+				menu.lastShow = 0; // reset this, otherwise hide will just schedule this timer
+				if( menu.subOpen ) menu.subOpen.hide();
+				menu.hide();
+			}
+			if( menu.lastShow )
+				setTimeout( menuCloser, 500 - ( now - menu.lastShow ) );
+		}
+	}
+
+	const menu = {
+		items: [],
+		lastShow : 0,
+		parent : null,
+		subOpen : null,
+		container : document.createElement( "div" ),
+		board : null,
+		separate( ) {
+			var newItem = document.createElement( "HR" );
+			menu.container.appendChild( newItem );
+                },
+
+		addItem( text, cb ) {
+				var newItem = document.createElement( "A" );
+				var newItemBR = document.createElement( "BR" );
+				newItem.textContent = text;
+				menu.container.appendChild( newItem );
+				menu.container.appendChild( newItemBR );
+				newItem.className = "popupItem";
+				newItem.addEventListener( "click", (evt)=>{
+				       cb();
+				       //console.log( "Item is clicked.", evt.target.value );
+				       this.hide( true );
+				} );
+				newItem.addEventListener( "mouseover", (evt)=>{
+					if( menu.subOpen ) {
+						menu.subOpen.hide();
+						menu.subOpen = null;
+					}
+					keepShow = true;
+				} );
+		},
+		addMenu( text ) {
+				var newItem = document.createElement( "A" );
+				var newItemBR = document.createElement( "BR" );
+				newItem.textContent = text;
+				this.container.appendChild( newItem );
+				this.container.appendChild( newItemBR );
+				const value = createPopupMenu();
+				{
+					value.parent = this;
+					newItem.addEventListener( "mouseover", (evt)=>{
+						var r = newItem.getBoundingClientRect();
+						keepShow = true;
+						console.log( "Item is clicked show that.", evt.clientX, evt.clientY );
+						value.show( evt.clientX, r.top - 10, menu.cb );
+						menu.subOpen = value;
+					} );
+					newItem.addEventListener( "mouseout", (evt)=>{
+						var r = newItem.getBoundingClientRect();
+						console.log( "Item is clicked show that.",  evt.clientX, r.top );
+						if( evt.toElement !== newItem.container )		
+							value.hide();
+					} );
+					newItem.addEventListener( "mousemove", (evt)=>{
+						if( this.subOpen ) this.subOpen.lastShow = Date.now();
+					} );
+				}
+				return value;
+		},
+		hide( all ) {
+			if( menu.lastShow ) return menuCloser();			
+			this.container.style.visibility = "hidden";
+			if( this.parent ) {
+				this.parent.subOpen = null; // should be the same as Me... 
+				if( all )
+					this.parent.hide( all );
+			} else {
+				mouseCatcher.style.visibility = "hide";
+			}
+		},
+		show( board, x, y, cb ) {
+			menu.lastShow = Date.now();
+			this.board = board;
+			menu.cb = cb;
+			mouseCatcher.style.visibility = "visible";
+			this.container.style.visibility = "inherit";
+			this.container.style.left = x;
+			this.container.style.top = y;
+		},
+		reset() {
+			this.hide(true);
+			//console.log( "hide everything?" );	
+		}
+	};
+
+	mouseCatcher.appendChild( menu.container );
+	menu.container.className = "popup";
+	menu.container.style.zIndex = 50;
+	menu.hide(); 
+	//document.body.appendChild( menu.container );
+	return menu;
+}
+
+// jsox.js
+// JSOX JavaScript Object eXchange. Inherits human features of comments
+// and extended formatting from JSON6; adds macros, big number and date
+// support.  See README.md for details.
+//
+// This file is based off of https://github.com/JSON6/  ./lib/json6.js
+// which is based off of https://github.com/d3x0r/sack  ./src/netlib/html5.websocket/json6_parser.c
+//
+var exports$1 = exports$1 || {};
+////const util = require('util'); // debug inspect.
+//import util from 'util'; 
+
+const _JSON$1=JSON; // in case someone does something like JSON=JSOX; we still need a primitive _JSON for internal stringification
+const JSOX$2 = exports$1;
+JSOX$2.version = "1.2.105";
+
+//function privateizeEverything() {
+//const _DEBUG_LL = false;
+//const _DEBUG_PARSING = false;
+//const _DEBUG_STRINGIFY = false;
+//const _DEBUG_PARSING_STACK = false;
+//const _DEBUG_PARSING_NUMBERS = false;
+//const _DEBUG_PARSING_DETAILS = false;
+//const _DEBUG_PARSING_CONTEXT = false;
+//const _DEBUG_REFERENCES = false; // this tracks folling context stack when the components have not been completed.
+//const _DEBUG_WHITESPACE = false; 
+const hasBigInt$1 = (typeof BigInt === "function");
+const VALUE_UNDEFINED$1 = -1;
+const VALUE_UNSET$1 = 0;
+const VALUE_NULL$1 = 1;
+const VALUE_TRUE$1 = 2;
+const VALUE_FALSE$1 = 3;
+const VALUE_STRING$1 = 4;
+const VALUE_NUMBER$1 = 5;
+const VALUE_OBJECT$1 = 6;
+const VALUE_NEG_NAN$1 = 7;
+const VALUE_NAN$1 = 8;
+const VALUE_NEG_INFINITY$1 = 9;
+const VALUE_INFINITY$1 = 10;
+//const VALUE_DATE = 11  // unused yet; this is actuall a subType of VALUE_NUMBER
+const VALUE_EMPTY$1 = 12; // [,] makes an array with 'empty item'
+const VALUE_ARRAY$1 = 13; //
+// internally arrayType = -1 is a normal array
+// arrayType = -2 is a reference array, which, which closed is resolved to
+//     the specified object.
+// arrayType = -3 is a normal array, that has already had this element pushed.
+const knownArrayTypeNames$1 = ["ab","u8","cu8","s8","u16","s16","u32","s32","u64","s64","f32","f64"];
+var arrayToJSOX$1 = null;
+var mapToJSOX$1 = null;
+const knownArrayTypes$1 = [ArrayBuffer
+                        ,Uint8Array,Uint8ClampedArray,Int8Array
+                        ,Uint16Array,Int16Array
+                        ,Uint32Array,Int32Array
+                        ,null,null//,Uint64Array,Int64Array
+                        ,Float32Array,Float64Array];
+// somehow max isn't used... it would be the NEXT available VALUE_XXX value...
+//const VALUE_ARRAY_MAX = VALUE_ARRAY + knownArrayTypes.length + 1; // 1 type is not typed; just an array.
+
+const WORD_POS_RESET$1 = 0;
+const WORD_POS_TRUE_1$1 = 1;
+const WORD_POS_TRUE_2$1 = 2;
+const WORD_POS_TRUE_3$1 = 3;
+const WORD_POS_FALSE_1$1 = 5;
+const WORD_POS_FALSE_2$1 = 6;
+const WORD_POS_FALSE_3$1 = 7;
+const WORD_POS_FALSE_4$1 = 8;
+const WORD_POS_NULL_1$1 = 9;
+const WORD_POS_NULL_2$1 = 10;
+const WORD_POS_NULL_3$1 = 11;
+const WORD_POS_UNDEFINED_1$1 = 12;
+const WORD_POS_UNDEFINED_2$1 = 13;
+const WORD_POS_UNDEFINED_3$1 = 14;
+const WORD_POS_UNDEFINED_4$1 = 15;
+const WORD_POS_UNDEFINED_5$1 = 16;
+const WORD_POS_UNDEFINED_6$1 = 17;
+const WORD_POS_UNDEFINED_7$1 = 18;
+const WORD_POS_UNDEFINED_8$1 = 19;
+const WORD_POS_NAN_1$1 = 20;
+const WORD_POS_NAN_2$1 = 21;
+const WORD_POS_INFINITY_1$1 = 22;
+const WORD_POS_INFINITY_2$1 = 23;
+const WORD_POS_INFINITY_3$1 = 24;
+const WORD_POS_INFINITY_4$1 = 25;
+const WORD_POS_INFINITY_5$1 = 26;
+const WORD_POS_INFINITY_6$1 = 27;
+const WORD_POS_INFINITY_7$1 = 28;
+
+const WORD_POS_FIELD$1 = 29;
+const WORD_POS_AFTER_FIELD$1 = 30;
+const WORD_POS_END$1 = 31;
+const WORD_POS_AFTER_FIELD_VALUE$1 = 32;
+//const WORD_POS_BINARY = 32;
+
+const CONTEXT_UNKNOWN$1 = 0;
+const CONTEXT_IN_ARRAY$1 = 1;
+const CONTEXT_OBJECT_FIELD$1 = 2;
+const CONTEXT_OBJECT_FIELD_VALUE$1 = 3;
+const CONTEXT_CLASS_FIELD$1 = 4;
+const CONTEXT_CLASS_VALUE$1 = 5;
+const CONTEXT_CLASS_FIELD_VALUE$1 = 6;
+const keywords$1 = {	["true"]:true,["false"]:false,["null"]:null,["NaN"]:NaN,["Infinity"]:Infinity,["undefined"]:undefined };
+
+const contexts$1 = [];
+function getContext$1() {
+	var ctx = contexts$1.pop();
+	if( !ctx )
+		ctx = { context : CONTEXT_UNKNOWN$1
+		      , current_proto : null
+		      , current_class : null
+		      , current_class_field : 0
+		      , arrayType : -1
+		      , valueType : VALUE_UNSET$1
+		      , elements : null
+		      };
+	return ctx;
+}
+function dropContext$1(ctx) { 
+/*
+	console.log( "Dropping context:", ctx );
+	ctx.elements = null;
+	ctx.name = null;
+	ctx.valueType = VALUE_UNSET;
+	ctx.arrayType = -1;
+*/
+	contexts$1.push( ctx ); 
+}
+
+const buffers$1 = [];
+function getBuffer$1() { var buf = buffers$1.pop(); if( !buf ) buf = { buf:null, n:0 }; else buf.n = 0; return buf; }
+function dropBuffer$1(buf) { buffers$1.push( buf ); }
+
+
+JSOX$2.escape = function(string) {
+	var n;
+	var output = '';
+	if( !string ) return string;
+	for( n = 0; n < string.length; n++ ) {
+		if( ( string[n] == '"' ) || ( string[n] == '\\' ) || ( string[n] == '`' )|| ( string[n] == '\'' )) {
+			output += '\\';
+		}
+		output += string[n];
+	}
+	return output;
+};
+
+const toProtoTypes$1 = new WeakMap();
+const toObjectTypes$1 = new Map();
+const fromProtoTypes$1 = new Map();
+const commonClasses$1 = [];
+
+
+JSOX$2.begin = function( cb, reviver ) {
+
+	const val = { name : null,	  // name of this value (if it's contained in an object)
+			value_type: VALUE_UNSET$1, // value from above indiciating the type of this value
+			string : '',   // the string value of this value (strings and number types only)
+			contains : null,
+			className : null,
+		};
+	
+	const pos = { line:1, col:1 };
+	let	n = 0;
+	let     str;
+	var	localFromProtoTypes = new Map();
+	var	word = WORD_POS_RESET$1,
+		status = true,
+		redefineClass = false,
+		negative = false,
+		result = null,
+		rootObject = null,
+		elements = undefined,
+		context_stack = {
+			first : null,
+			last : null,
+			saved : null,
+			push(node) {
+				//_DEBUG_PARSING_CONTEXT && console.log( "pushing context:", node );
+				var recover = this.saved;
+				if( recover ) { this.saved = recover.next; 
+					recover.node = node; 
+					recover.next = null; 
+					recover.prior = this.last; }
+				else { recover = { node : node, next : null, prior : this.last }; }
+				if( !this.last ) this.first = recover;
+				else this.last.next = recover;
+				this.last = recover;
+				this.length++;
+			},
+			pop() {
+				var result = this.last;
+				// through normal usage this line can never be used.
+				//if( !result ) return null;
+				if( !(this.last = result.prior ) ) this.first = null;
+				result.next = this.saved;
+				if( this.last ) this.last.next = null;
+				if( !result.next ) result.first = null;
+				this.saved = result;
+				this.length--;
+				//_DEBUG_PARSING_CONTEXT && console.log( "popping context:", result.node );
+				return result.node;
+			},
+			length : 0,
+			/*dump() {  // //_DEBUG_CONTEXT_STACK
+				console.log( "STACK LENGTH:", this.length );
+				let cur= this.first;
+				let level = 0;
+				while( cur ) {
+					console.log( "Context:", level, cur.node );
+					level++;
+					cur = cur.next;
+				}
+			}*/
+		},
+		classes = [],  // class templates that have been defined.
+		protoTypes = {},
+		current_proto = null,  // the current class being defined or being referenced.
+		current_class = null,  // the current class being defined or being referenced.
+		current_class_field = 0,
+		arrayType = -1,  // the current class being defined or being referenced.
+		parse_context = CONTEXT_UNKNOWN$1,
+		comment = 0,
+		fromHex = false,
+		decimal = false,
+		exponent = false,
+		exponent_sign = false,
+		exponent_digit = false,
+		inQueue = {
+			first : null,
+			last : null,
+			saved : null,
+			push(node) {
+				var recover = this.saved;
+				if( recover ) { this.saved = recover.next; recover.node = node; recover.next = null; recover.prior = this.last; }
+				else { recover = { node : node, next : null, prior : this.last }; }
+				if( !this.last ) this.first = recover;
+				else this.last.next = recover;
+				this.last = recover;
+			},
+			shift() {
+				var result = this.first;
+				if( !result ) return null;
+				if( !(this.first = result.next ) ) this.last = null;
+				result.next = this.saved; this.saved = result;
+				return result.node;
+			},
+			unshift(node) {
+				var recover = this.saved;
+				// this is always true in this usage.
+				//if( recover ) { 
+					this.saved = recover.next; recover.node = node; recover.next = this.first; recover.prior = null; 
+				//}
+				//else { recover = { node : node, next : this.first, prior : null }; }
+				if( !this.first ) this.last = recover;
+				this.first = recover;
+			}
+		},
+		gatheringStringFirstChar = null,
+		gatheringString = false,
+		gatheringNumber = false,
+		stringEscape = false,
+		cr_escaped = false,
+		unicodeWide = false,
+		stringUnicode = false,
+		stringHex = false,
+		hex_char = 0,
+		hex_char_len = 0,
+		completed = false,
+		date_format = false,
+		isBigInt = false
+		;
+
+	function throwEndError( leader ) {
+		throw new Error( `${leader} at ${n} [${pos.line}:${pos.col}]`);
+	}
+
+	return {
+		fromJSOX( prototypeName, o, f ) {
+			if( localFromProtoTypes.get(prototypeName) ) throw new Error( "Existing fromJSOX has been registered for prototype" );
+			function privateProto() { }
+			if( !o ) o = privateProto;
+			if( o && !("constructor" in o )){
+				throw new Error( "Please pass a prototype like thing...");
+			}
+			localFromProtoTypes.set( prototypeName, { protoCon:o.prototype.constructor, cb:f } );
+		},
+		registerFromJSOX( prototypeName, o/*, f*/ ) {
+			throw new Error( "registerFromJSOX is deprecated, please update to use fromJSOX instead:" + prototypeName + o.toString() );
+		},
+		finalError() {
+			if( comment !== 0 ) { // most of the time everything's good.
+				if( comment === 1 ) throwEndError( "Comment began at end of document" );
+				if( comment === 3 ) throwEndError( "Open comment '/*' is missing close at end of document" );
+				if( comment === 4 ) throwEndError( "Incomplete '/* *' close at end of document" );
+			}
+			if( gatheringString ) throwEndError( "Incomplete string" );
+		},
+		value() {
+			this.finalError();
+			var r = result;
+			result = undefined;
+			return r;
+		},
+		reset() {
+			word = WORD_POS_RESET$1;
+			status = true;
+			if( inQueue.last ) inQueue.last.next = inQueue.save;
+			inQueue.save = inQueue.first;
+			inQueue.first = inQueue.last = null;
+			if( context_stack.last ) context_stack.last.next = context_stack.save;
+			context_stack.length = 0;
+			context_stack.save = inQueue.first;
+			context_stack.first = context_stack.last = null;//= [];
+			elements = undefined;
+			parse_context = CONTEXT_UNKNOWN$1;
+			classes = [];
+			protoTypes = {};
+			current_proto = null;
+			current_class = null;
+			current_class_field = 0;
+			val.value_type = VALUE_UNSET$1;
+			val.name = null;
+			val.string = '';
+			val.className = null;
+			pos.line = 1;
+			pos.col = 1;
+			negative = false;
+			comment = 0;
+			completed = false;
+			gatheringString = false;
+			stringEscape = false;  // string stringEscape intro
+			cr_escaped = false;   // carraige return escaped
+			date_format = false;
+
+			//stringUnicode = false;  // reading \u
+			//unicodeWide = false;  // reading \u{} in string
+			//stringHex = false;  // reading \x in string
+		},
+		usePrototype(className,protoType ) { protoTypes[className] = protoType; },
+		write(msg) {
+			var retcode;
+			if (typeof msg !== "string" && typeof msg !== "undefined") msg = String(msg);
+			if( !status ) throw new Error( "Parser is still in an error state, please reset before resuming" );
+			for( retcode = this._write(msg,false); retcode > 0; retcode = this._write() ) {
+				if( typeof reviver === 'function' ) (function walk(holder, key) {
+					var k, v, value = holder[key];
+					if (value && typeof value === 'object') {
+						for (k in value) {
+							if (Object.prototype.hasOwnProperty.call(value, k)) {
+								v = walk(value, k);
+								if (v !== undefined) {
+									value[k] = v;
+								} else {
+									delete value[k];
+								}
+							}
+						}
+					}
+					return reviver.call(holder, key, value);
+				}({'': result}, ''));
+				result = cb( result );
+
+				if( retcode < 2 )
+					break;
+			}
+		},
+		_write(msg,complete_at_end) {
+			var cInt;
+			var input;
+			var buf;
+			var retval = 0;
+			function throwError( leader, c ) {
+				throw new Error( `${leader} '${String.fromCodePoint( c )}' unexpected at ${n} (near '${buf.substr(n>4?(n-4):0,n>4?3:(n-1))}[${String.fromCodePoint( c )}]${buf.substr(n, 10)}') [${pos.line}:${pos.col}]`);
+			}
+
+			function RESET_VAL()  {
+				val.value_type = VALUE_UNSET$1;
+				val.string = '';
+				val.contains = null;
+				//val.className = null;
+			}
+
+			function convertValue() {
+				var fp = null;
+				//_DEBUG_PARSING && console.log( "CONVERT VAL:", val );
+				switch( val.value_type ){
+				case VALUE_NUMBER$1:
+					//1502678337047
+					if( ( ( val.string.length > 13 ) || ( val.string.length == 13 && val[0]>'2' ) )
+					    && !date_format && !exponent_digit && !exponent_sign && !decimal ) {
+						isBigInt = true;
+					}
+					if( isBigInt ) { if( hasBigInt$1 ) return BigInt(val.string); else throw new Error( "no builtin BigInt()", 0 ) }
+					if( date_format ) { const r = new Date( val.string ); if(isNaN(r.getTime())) throwError( "Bad number format", cInt ); return r;  }
+					return  (negative?-1:1) * Number( val.string );
+				case VALUE_STRING$1:
+					if( val.className ) {
+						fp = localFromProtoTypes.get( val.className );
+						if( !fp )
+							fp = fromProtoTypes$1.get( val.className );
+						if( fp && fp.cb ) {
+							val.className = null;
+							return fp.cb.call( val.string );
+						} else {
+							// '[object Object]' throws this error.
+							throw new Error( "Double string error, no constructor for: new " + val.className + "("+val.string+")" )
+						}	
+					}
+					return val.string;
+				case VALUE_TRUE$1:
+					return true;
+				case VALUE_FALSE$1:
+					return false;
+				case VALUE_NEG_NAN$1:
+					return -NaN;
+				case VALUE_NAN$1:
+					return NaN;
+				case VALUE_NEG_INFINITY$1:
+					return -Infinity;
+				case VALUE_INFINITY$1:
+					return Infinity;
+				case VALUE_NULL$1:
+					return null;
+				case VALUE_UNDEFINED$1:
+					return undefined;
+				case VALUE_EMPTY$1:
+					return undefined;
+				case VALUE_OBJECT$1:
+					if( val.className ) { 
+						//_DEBUG_PARSING_DETAILS && console.log( "class reviver" );
+						fp = localFromProtoTypes.get( val.className );
+						if( !fp )
+							fp = fromProtoTypes$1.get( val.className );
+						val.className = null;
+						if( fp && fp.cb ) return val.contains = fp.cb.call( val.contains ); 
+					}
+					return val.contains;
+				case VALUE_ARRAY$1:
+					//_DEBUG_PARSING_DETAILS && console.log( "Array conversion:", arrayType, val.contains );
+					if( arrayType >= 0 ) {
+						let ab;
+						if( val.contains.length )
+							ab = DecodeBase64$3( val.contains[0] );
+						else ab = DecodeBase64$3( val.string );
+						if( arrayType === 0 ) return ab;
+						else return new knownArrayTypes$1[arrayType]( ab );
+					} else if( arrayType === -2 ) {
+						var obj = rootObject;
+						//let ctx = context_stack.first;
+						let lvl;
+						//console.log( "Resolving Reference...", context_stack.length );
+						//console.log( "--elements and array", elements );
+						
+						const pathlen = val.contains.length;
+						for( lvl = 0; lvl < pathlen; lvl++ ) {
+							const idx = val.contains[lvl];
+							//_DEBUG_REFERENCES && console.log( "Looking up idx:", idx, "of", val.contains, "in", obj );
+							let nextObj = obj[idx];
+
+							//_DEBUG_REFERENCES  && console.log( "Resolve path:", lvl, idx,"in", obj, context_stack.length, val.contains.toString() );
+							//_DEBUG_REFERENCES && console.log( "NEXT OBJECT:", nextObj );
+							if( !nextObj ) {
+								{
+									let ctx = context_stack.first;
+									let p = 0;
+									//_DEBUG_PARSING_CONTEXT && context_stack.dump();
+									while( ctx && p < pathlen && p < context_stack.length ) {
+										const thisKey = val.contains[p];
+										if( thisKey in obj ) {
+											//console.log( "don't need to be in the context stack anymore------------------------------")
+											break;
+										}
+										//_DEBUG_REFERENCES && console.log( "Checking context:", obj, "p=",p, "key=",thisKey, "ctx=",util.inspect(ctx), "ctxNext=",ctx.next);
+										//console.dir(ctx, { depth: null })
+										if( ctx.next ) {
+											if( "number" === typeof thisKey ) {
+												
+												const asdf = ctx.next.node.elements;
+												const actualObject = ctx.next.node.elements;
+												//_DEBUG_REFERENCES && console.log( "Number in index... tracing stack...", obj, actualObject, ctx && ctx.next && ctx.next.next && ctx.next.next.node );
+
+												if( asdf && thisKey >= asdf.length ) {
+													//_DEBUG_REFERENCES && console.log( "AT ", p, actualObject.length, val.contains.length );
+													if( p === (actualObject.length-1) ) {
+														////_DEBUG_REFERENCES && 
+															console.log( "This is actually at the current object so use that" );
+														nextObj = elements;
+														
+														break;
+													}
+													else {
+														if( ctx.next.next && thisKey === asdf.length ) {
+															//_DEBUG_REFERENCES && console.log( "is next... ")
+															nextObj = ctx.next.next.node.elements;
+															ctx = ctx.next;
+															p++;
+															obj = nextObj;
+															continue;
+														}
+														//_DEBUG_REFERENCES && console.log( "FAILING HERE", ctx.next, ctx.next.next, elements );
+														nextObj = elements;
+														p++; // make sure to exit.
+
+														break;
+														//obj = next
+													}
+												}
+											} else {
+												//_DEBUG_REFERENCES && console.log( "field AT index", p,"of", val.contains.length );
+												if( thisKey !== ctx.next.node.name ){
+													//_DEBUG_REFERENCES && console.log( "Expect:", thisKey, ctx.next.node.name, ctx.next.node.elements );
+													nextObj = ( ctx.next.node.elements[thisKey] );
+													//throw new Error( "Unexpected path-context relationship" );													
+													lvl = p;
+													break;
+												} else {
+													//_DEBUG_REFERENCES && console.log( "Updating next object(NEW) to", ctx.next.node, elements, thisKey)
+													if( ctx.next.node.valueType === VALUE_ARRAY$1 ){
+														//_DEBUG_REFERENCES && console.log( "Using the array element of that")
+														nextObj = ctx.next.node.elements_array;
+													}else {
+														nextObj = ctx.next.node.elements[thisKey];
+														//_DEBUG_REFERENCES && console.log( "using named element from", ctx.next.node.elements, "=", nextObj )
+													}
+												}
+											}
+											//if( //_DEBUG_REFERENCES )  {
+											//	const a = ctx.next.node.elements;
+											//	console.log( "Stack Dump:"
+											//		, a?a.length:a
+											//		, ctx.next.node.name
+											//		, thisKey
+											//		);
+											//}
+										} else {
+											nextObj = nextObj[thisKey];
+										}
+										//_DEBUG_REFERENCES && console.log( "Doing next context??", p, context_stack.length, val.contains.length );
+										ctx = ctx.next;
+										p++;
+									}
+									//_DEBUG_REFERENCES && console.log( "Done with context stack...level", lvl, "p", p );
+									if( p < pathlen )
+										lvl = p-1;
+									else lvl = p;
+								}
+								//_DEBUG_REFERENCES && console.log( "End of processing level:", lvl );
+							}
+							if( !nextObj ) {
+								throw new Error( "Path did not resolve properly:" +  val.contains + " at " + idx + '(' + lvl + ')' );
+							}
+							obj = nextObj;
+						}
+						//_DEBUG_PARSING && console.log( "Resulting resolved object:", obj );
+						//_DEBUG_PARSING_DETAILS && console.log( "SETTING MODE TO -3 (resolved -2)" );
+						arrayType = -3;
+						return obj;
+					}
+					if( val.className ) { 
+						fp = localFromProtoTypes.get( val.className );
+						if( !fp )
+							fp = fromProtoTypes$1.get( val.className );
+						val.className = null; 
+						if( fp && fp.cb ) return fp.cb.call( val.contains ); 
+					}
+					return val.contains;
+				default:
+					console.log( "Unhandled value conversion.", val );
+					break;
+				}
+			}
+
+			function arrayPush() {
+				//_DEBUG_PARSING && console.log( "PUSH TO ARRAY:", val );
+				if( arrayType == -3 )  {
+					//_DEBUG_PARSING && console.log(" Array type -3?", val.value_type, elements );
+					if( val.value_type === VALUE_OBJECT$1 ) {
+						elements.push( val.contains );
+					}
+					arrayType = -1; // next one should be allowed?
+					return;
+				} //else
+				//	console.log( "Finally a push that's not already pushed!", );
+				switch( val.value_type ){
+				case VALUE_EMPTY$1:
+					elements.push( undefined );
+					delete elements[elements.length-1];
+					break;
+				default:
+					elements.push( convertValue() );
+					break;
+				}
+				RESET_VAL();
+			}
+
+			function objectPush() {
+				if( arrayType === -3 && val.value_type === VALUE_ARRAY$1 ) {
+					//console.log( "Array has already been set in object." );
+					//elements[val.name] = val.contains;
+					RESET_VAL();
+					arrayType = -1;
+					return;
+				}
+				if( val.value_type === VALUE_EMPTY$1 ) return;
+				if( !val.name && current_class ) {
+					//_DEBUG_PARSING_DETAILS && console.log( "A Stepping current class field:", current_class_field, val.name );
+					val.name = current_class.fields[current_class_field++];
+				}
+				let value = convertValue();
+
+				if( current_proto && current_proto.protoDef && current_proto.protoDef.cb ) {
+					//_DEBUG_PARSING_DETAILS && console.log( "SOMETHING SHOULD AHVE BEEN REPLACED HERE??", current_proto );
+					//_DEBUG_PARSING_DETAILS && console.log( "(need to do fromprototoypes here) object:", val, value );
+					value = current_proto.protoDef.cb.call( elements, val.name, value );
+					if( value ) elements[val.name] = value;
+					//elements = new current_proto.protoCon( elements );
+				}else {
+				        //_DEBUG_PARSING_DETAILS && console.log( "Default no special class reviver", val.name, value );
+					elements[val.name] = value;
+				}
+				//_DEBUG_PARSING_DETAILS && console.log( "Updated value:", current_class_field, val.name, elements[val.name] );
+			
+				//_DEBUG_PARSING && console.log( "+++ Added object field:", val.name, elements, elements[val.name], rootObject );
+				RESET_VAL();
+			}
+
+			function recoverIdent(cInt) {
+				//_DEBUG_PARSING&&console.log( "Recover Ident char:", cInt, val, String.fromCodePoint(cInt), "word:", word );
+				if( word !== WORD_POS_RESET$1 ) {
+					if( negative ) { 
+						//val.string += "-"; negative = false; 
+						throwError( "Negative outside of quotes, being converted to a string (would lose count of leading '-' characters)", cInt );
+					}
+					switch( word ) {
+					case WORD_POS_END$1:
+						switch( val.value_type ) {
+						case VALUE_TRUE$1:  val.string += "true"; break
+						case VALUE_FALSE$1:  val.string += "false"; break
+						case VALUE_NULL$1:  val.string += "null"; break
+						case VALUE_INFINITY$1:  val.string += "Infinity"; break
+						case VALUE_NEG_INFINITY$1:  val.string += "-Infinity"; throwError( "Negative outside of quotes, being converted to a string", cInt ); break
+						case VALUE_NAN$1:  val.string += "NaN"; break
+						case VALUE_NEG_NAN$1:  val.string += "-NaN"; throwError( "Negative outside of quotes, being converted to a string", cInt ); break
+						case VALUE_UNDEFINED$1:  val.string += "undefined"; break
+						case VALUE_STRING$1: break;
+						case VALUE_UNSET$1: break;
+						default:
+							console.log( "Value of type " + val.value_type + " is not restored..." );
+						}
+						break;
+					case WORD_POS_TRUE_1$1 :  val.string += "t"; break;
+					case WORD_POS_TRUE_2$1 :  val.string += "tr"; break;
+					case WORD_POS_TRUE_3$1 : val.string += "tru"; break;
+					case WORD_POS_FALSE_1$1 : val.string += "f"; break;
+					case WORD_POS_FALSE_2$1 : val.string += "fa"; break;
+					case WORD_POS_FALSE_3$1 : val.string += "fal"; break;
+					case WORD_POS_FALSE_4$1 : val.string += "fals"; break;
+					case WORD_POS_NULL_1$1 : val.string += "n"; break;
+					case WORD_POS_NULL_2$1 : val.string += "nu"; break;
+					case WORD_POS_NULL_3$1 : val.string += "nul"; break;
+					case WORD_POS_UNDEFINED_1$1 : val.string += "u"; break;
+					case WORD_POS_UNDEFINED_2$1 : val.string += "un"; break;
+					case WORD_POS_UNDEFINED_3$1 : val.string += "und"; break;
+					case WORD_POS_UNDEFINED_4$1 : val.string += "unde"; break;
+					case WORD_POS_UNDEFINED_5$1 : val.string += "undef"; break;
+					case WORD_POS_UNDEFINED_6$1 : val.string += "undefi"; break;
+					case WORD_POS_UNDEFINED_7$1 : val.string += "undefin"; break;
+					case WORD_POS_UNDEFINED_8$1 : val.string += "undefine"; break;
+					case WORD_POS_NAN_1$1 : val.string += "M"; break;
+					case WORD_POS_NAN_2$1 : val.string += "Na"; break;
+					case WORD_POS_INFINITY_1$1 : val.string += "I"; break;
+					case WORD_POS_INFINITY_2$1 : val.string += "In"; break;
+					case WORD_POS_INFINITY_3$1 : val.string += "Inf"; break;
+					case WORD_POS_INFINITY_4$1 : val.string += "Infi"; break;
+					case WORD_POS_INFINITY_5$1 : val.string += "Infin"; break;
+					case WORD_POS_INFINITY_6$1 : val.string += "Infini"; break;
+					case WORD_POS_INFINITY_7$1 : val.string += "Infinit"; break;
+					case WORD_POS_RESET$1 : break;
+					case WORD_POS_FIELD$1 : break;
+					case WORD_POS_AFTER_FIELD$1:
+					    //throwError( "String-keyword recovery fail (after whitespace)", cInt);
+					    break;
+					case WORD_POS_AFTER_FIELD_VALUE$1:
+					    throwError( "String-keyword recovery fail (after whitespace)", cInt );
+					    break;
+						//console.log( "Word context: " + word + " unhandled" );
+					}
+					val.value_type = VALUE_STRING$1;									
+					if( word < WORD_POS_FIELD$1)
+					    word = WORD_POS_END$1;
+				} else {
+					word = WORD_POS_END$1;
+					//if( val.value_type === VALUE_UNSET && val.string.length )
+						val.value_type = VALUE_STRING$1;
+				}
+				if( cInt == 123/*'{'*/ )
+					openObject();
+				else if( cInt == 91/*'['*/ )
+					openArray();
+				else if( cInt == 44/*','*/ ) ; else {
+					// ignore white space.
+					if( cInt == 32/*' '*/ || cInt == 13 || cInt == 10 || cInt == 9 || cInt == 0xFEFF || cInt == 0x2028 || cInt == 0x2029 ) {
+						//_DEBUG_WHITESPACE && console.log( "IGNORE WHITESPACE" );
+						return;
+					}
+
+					if( cInt == 44/*','*/ || cInt == 125/*'}'*/ || cInt == 93/*']'*/ || cInt == 58/*':'*/ )
+						throwError( "Invalid character near identifier", cInt );
+					else //if( typeof cInt === "number")
+						val.string += str;
+				}
+				//console.log( "VAL STRING IS:", val.string, str );
+			}
+
+			function gatherString( start_c ) {
+				let retval = 0;
+				while( retval == 0 && ( n < buf.length ) ) {
+					str = buf.charAt(n);
+					let cInt = buf.codePointAt(n++);
+					if( cInt >= 0x10000 ) { str += buf.charAt(n); n++; }
+					//console.log( "gathering....", stringEscape, str, cInt, unicodeWide, stringHex, stringUnicode, hex_char_len );
+					pos.col++;
+					if( cInt == start_c ) { //( cInt == 34/*'"'*/ ) || ( cInt == 39/*'\''*/ ) || ( cInt == 96/*'`'*/ ) )
+						if( stringEscape ) { 
+							if( stringHex )
+								throwError( "Incomplete hexidecimal sequence", cInt );
+							else if( stringUnicode )
+								throwError( "Incomplete long unicode sequence", cInt );
+							else if( unicodeWide )
+								throwError( "Incomplete unicode sequence", cInt );
+							if( cr_escaped ) {
+								cr_escaped = false;
+								retval = 1; // complete string, escaped \r
+							} else val.string += str;
+							stringEscape = false; }
+						else {
+							// quote matches, and is not processing an escape sequence.
+							retval = 1;
+						}
+					}
+
+					else if( stringEscape ) {
+						if( unicodeWide ) {
+							if( cInt == 125/*'}'*/ ) {
+								val.string += String.fromCodePoint( hex_char );
+								unicodeWide = false;
+								stringUnicode = false;
+								stringEscape = false;
+								continue;
+							}
+							hex_char *= 16;
+							if( cInt >= 48/*'0'*/ && cInt <= 57/*'9'*/ )      hex_char += cInt - 0x30;
+							else if( cInt >= 65/*'A'*/ && cInt <= 70/*'F'*/ ) hex_char += ( cInt - 65 ) + 10;
+							else if( cInt >= 97/*'a'*/ && cInt <= 102/*'f'*/ ) hex_char += ( cInt - 97 ) + 10;
+							else {
+								throwError( "(escaped character, parsing hex of \\u)", cInt );
+								retval = -1;
+								unicodeWide = false;
+								stringEscape = false;
+								continue;
+							}
+							continue;
+						}
+						else if( stringHex || stringUnicode ) {
+							if( hex_char_len === 0 && cInt === 123/*'{'*/ ) {
+								unicodeWide = true;
+								continue;
+							}
+							if( hex_char_len < 2 || ( stringUnicode && hex_char_len < 4 ) ) {
+								hex_char *= 16;
+								if( cInt >= 48/*'0'*/ && cInt <= 57/*'9'*/ )      hex_char += cInt - 0x30;
+								else if( cInt >= 65/*'A'*/ && cInt <= 70/*'F'*/ ) hex_char += ( cInt - 65 ) + 10;
+								else if( cInt >= 97/*'a'*/ && cInt <= 102/*'f'*/ ) hex_char += ( cInt - 97 ) + 10;
+								else {
+									throwError( stringUnicode?"(escaped character, parsing hex of \\u)":"(escaped character, parsing hex of \\x)", cInt );
+									retval = -1;
+									stringHex = false;
+									stringEscape = false;
+									continue;
+								}
+								hex_char_len++;
+								if( stringUnicode ) {
+									if( hex_char_len == 4 ) {
+										val.string += String.fromCodePoint( hex_char );
+										stringUnicode = false;
+										stringEscape = false;
+									}
+								}
+								else if( hex_char_len == 2 ) {
+									val.string += String.fromCodePoint( hex_char );
+									stringHex = false;
+									stringEscape = false;
+								}
+								continue;
+							}
+						}
+						switch( cInt ) {
+						case 13/*'\r'*/:
+							cr_escaped = true;
+							pos.col = 1;
+							continue;
+						case 0x2028: // LS (Line separator)
+						case 0x2029: // PS (paragraph separate)
+							pos.col = 1;
+							// falls through
+						case 10/*'\n'*/:
+							if( !cr_escaped ) { // \\ \n
+								pos.col = 1;
+							} else { // \\ \r \n
+								cr_escaped = false;
+							}
+							pos.line++;
+							break;
+						case 116/*'t'*/:
+							val.string += '\t';
+							break;
+						case 98/*'b'*/:
+							val.string += '\b';
+							break;
+						case 110/*'n'*/:
+							val.string += '\n';
+							break;
+						case 114/*'r'*/:
+							val.string += '\r';
+							break;
+						case 102/*'f'*/:
+							val.string += '\f';
+							break;
+						case 48/*'0'*/: 
+							val.string += '\0';
+							break;
+						case 120/*'x'*/:
+							stringHex = true;
+							hex_char_len = 0;
+							hex_char = 0;
+							continue;
+						case 117/*'u'*/:
+							stringUnicode = true;
+							hex_char_len = 0;
+							hex_char = 0;
+							continue;
+						//case 47/*'/'*/:
+						//case 92/*'\\'*/:
+						//case 34/*'"'*/:
+						//case 39/*"'"*/:
+						//case 96/*'`'*/:
+						default:
+							val.string += str;
+							break;
+						}
+						//console.log( "other..." );
+						stringEscape = false;
+					}
+					else if( cInt === 92/*'\\'*/ ) {
+						if( stringEscape ) {
+							val.string += '\\';
+							stringEscape = false;
+						}
+						else {
+							stringEscape = true;
+							hex_char = 0;
+							hex_char_len = 0;
+						}
+					}
+					else { /* any other character */
+						if( cr_escaped ) {
+							// \\ \r <any char>
+							cr_escaped = false;
+							pos.line++;
+							pos.col = 2; // this character is pos 1; and increment to be after it.
+						}
+						val.string += str;
+					}
+				}
+				return retval;
+			}
+
+			function collectNumber() {
+				let _n;
+				while( (_n = n) < buf.length ) {
+					str = buf.charAt(_n);
+					let cInt = buf.codePointAt(n++);
+					if( cInt >= 256 ) { 
+							n = _n; // put character back in queue to process.
+							break;
+					} else {
+						//_DEBUG_PARSING_NUMBERS  && console.log( "in getting number:", n, cInt, String.fromCodePoint(cInt) );
+						if( cInt == 95 /*_*/ )
+							continue;
+						pos.col++;
+						// leading zeros should be forbidden.
+						if( cInt >= 48/*'0'*/ && cInt <= 57/*'9'*/ ) {
+							if( exponent ) {
+								exponent_digit = true;
+							}
+							val.string += str;
+						} else if( cInt == 45/*'-'*/ || cInt == 43/*'+'*/ ) {
+							if( val.string.length == 0 || ( exponent && !exponent_sign && !exponent_digit ) ) {
+								if( cInt == 45/*'-'*/ && !exponent ) negative = !negative;
+								val.string += str;
+								exponent_sign = true;
+							} else {
+								val.string += str;
+								date_format = true;
+							}
+						} else if( cInt == 78/*'N'*/ ) {
+							if( word == WORD_POS_RESET$1 ) {
+								gatheringNumber = false;
+								word = WORD_POS_NAN_1$1;
+								return;
+							}
+							throwError( "fault while parsing number;", cInt );
+							break;
+						} else if( cInt == 73/*'I'*/ ) {
+							if( word == WORD_POS_RESET$1 ) {
+								gatheringNumber = false;
+								word = WORD_POS_INFINITY_1$1;
+								return;
+							}
+							throwError( "fault while parsing number;", cInt );
+							break;
+						} else if( cInt == 58/*':'*/ && date_format ) {
+							val.string += str;
+							date_format = true;
+						} else if( cInt == 84/*'T'*/ && date_format ) {
+							val.string += str;
+							date_format = true;
+						} else if( cInt == 90/*'Z'*/ && date_format ) {
+							val.string += str;
+							date_format = true;
+						} else if( cInt == 46/*'.'*/ ) {
+							if( !decimal && !fromHex && !exponent ) {
+								val.string += str;
+								decimal = true;
+							} else {
+								status = false;
+								throwError( "fault while parsing number;", cInt );
+								break;
+							}
+						} else if( cInt == 110/*'n'*/ ) {
+							isBigInt = true;
+							break;
+						} else if( cInt == 120/*'x'*/ || cInt == 98/*'b'*/ || cInt == 111/*'o'*/
+								|| cInt == 88/*'X'*/ || cInt == 66/*'B'*/ || cInt == 79/*'O'*/ ) {
+							// hex conversion.
+							if( !fromHex && val.string == '0' ) {
+								fromHex = true;
+								val.string += str;
+							}
+							else {
+								status = false;
+								throwError( "fault while parsing number;", cInt );
+								break;
+							}
+						} else if( ( cInt == 101/*'e'*/ ) || ( cInt == 69/*'E'*/ ) ) {
+							if( !exponent ) {
+								val.string += str;
+								exponent = true;
+							} else {
+								status = false;
+								throwError( "fault while parsing number;", cInt );
+								break;
+							}
+						} else {
+							if( cInt == 32/*' '*/ || cInt == 13 || cInt == 10 || cInt == 9 || cInt == 47/*'/'*/ || cInt ==  35/*'#'*/
+							 || cInt == 44/*','*/ || cInt == 125/*'}'*/ || cInt == 93/*']'*/
+							 || cInt == 123/*'{'*/ || cInt == 91/*'['*/ || cInt == 34/*'"'*/ || cInt == 39/*'''*/ || cInt == 96/*'`'*/
+							 || cInt == 58/*':'*/ ) {
+								n = _n; // put character back in queue to process.
+								break;
+							}
+							else {
+								if( complete_at_end ) {
+									status = false;
+									throwError( "fault while parsing number;", cInt );
+								}
+								break;
+							}
+						}
+					}
+				}
+				if( (!complete_at_end) && n == buf.length ) {
+					gatheringNumber = true;
+				}
+				else {
+					gatheringNumber = false;
+					val.value_type = VALUE_NUMBER$1;
+					if( parse_context == CONTEXT_UNKNOWN$1 ) {
+						completed = true;
+					}
+				}
+			}
+
+			function openObject() {
+				let nextMode = CONTEXT_OBJECT_FIELD$1;
+				let cls = null;
+				let tmpobj = {};
+				//_DEBUG_PARSING && console.log( "opening object:", val.string, val.value_type, word, parse_context );
+				if( word > WORD_POS_RESET$1 && word < WORD_POS_FIELD$1 )
+					recoverIdent( 123 /* '{' */ );
+				let protoDef;
+				protoDef = getProto(); // lookup classname using val.string and get protodef(if any)
+				if( parse_context == CONTEXT_UNKNOWN$1 ) {
+					if( word == WORD_POS_FIELD$1 /*|| word == WORD_POS_AFTER_FIELD*/ 
+					   || word == WORD_POS_END$1
+					     && ( protoDef || val.string.length ) ) {
+							if( protoDef && protoDef.protoDef && protoDef.protoDef.protoCon ) {
+								tmpobj = new protoDef.protoDef.protoCon();
+							}
+						if( !protoDef || !protoDef.protoDef && val.string ) // class creation is redundant...
+						{
+							cls = classes.find( cls=>cls.name===val.string );
+							console.log( "Probably creating the Macro-Tag here?", cls );
+							if( !cls ) {
+								/* eslint-disable no-inner-declarations */
+								function privateProto() {} 
+								// this just uses the tmpobj {} container to store the values collected for this class...
+								// this does not generate the instance of the class.
+								// if this tag type is also a prototype, use that prototype, else create a unique proto
+								// for this tagged class type.
+								classes.push( cls = { name : val.string
+								, protoCon: (protoDef && protoDef.protoDef && protoDef.protoDef.protoCon) || privateProto.constructor
+								 , fields : [] } );
+								 nextMode = CONTEXT_CLASS_FIELD$1;
+							} else if( redefineClass ) {
+								//_DEBUG_PARSING && console.log( "redefine class..." );
+								// redefine this class
+								cls.fields.length = 0;
+								nextMode = CONTEXT_CLASS_FIELD$1;
+							} else {
+								//_DEBUG_PARSING && console.log( "found existing class, using it....");
+								tmpobj = new cls.protoCon();
+								//tmpobj = Object.assign( tmpobj, cls.protoObject );
+								//Object.setPrototypeOf( tmpobj, Object.getPrototypeOf( cls.protoObject ) );
+								nextMode = CONTEXT_CLASS_VALUE$1;
+							}
+							redefineClass = false;
+						}
+						current_class = cls;
+						word = WORD_POS_RESET$1;
+					} else {
+						word = WORD_POS_FIELD$1;
+					}
+				} else if( word == WORD_POS_FIELD$1 /*|| word == WORD_POS_AFTER_FIELD*/ 
+						|| parse_context === CONTEXT_IN_ARRAY$1 
+						|| parse_context === CONTEXT_OBJECT_FIELD_VALUE$1 
+						|| parse_context == CONTEXT_CLASS_VALUE$1 ) {
+					if( word != WORD_POS_RESET$1 || val.value_type == VALUE_STRING$1 ) {
+						if( protoDef && protoDef.protoDef ) {
+							// need to collect the object,
+							tmpobj = new protoDef.protoDef.protoCon();
+						} else {
+							// look for a class type (shorthand) to recover.
+							cls = classes.find( cls=>cls.name === val.string );
+							if( !cls )
+							{
+								/* eslint-disable no-inner-declarations */
+							   function privateProto(){}
+								//sconsole.log( "privateProto has no proto?", privateProto.prototype.constructor.name );
+								localFromProtoTypes.set( val.string,
+														{ protoCon:privateProto.prototype.constructor
+														, cb: null }
+													   );
+								tmpobj = new privateProto();
+							}
+							else {
+								nextMode = CONTEXT_CLASS_VALUE$1;
+								tmpobj = {};
+							}
+						}
+						//nextMode = CONTEXT_CLASS_VALUE;
+						word = WORD_POS_RESET$1;
+					} else {
+						word = WORD_POS_RESET$1;
+					}
+				} else if( ( parse_context == CONTEXT_OBJECT_FIELD$1 && word == WORD_POS_RESET$1 ) ) {
+					throwError( "fault while parsing; getting field name unexpected ", cInt );
+					status = false;
+					return false;
+				}
+
+				// common code to push into next context
+				let old_context = getContext$1();
+				//_DEBUG_PARSING && console.log( "Begin a new object; previously pushed into elements; but wait until trailing comma or close previously ", val.value_type, val.className );
+
+				val.value_type = VALUE_OBJECT$1;
+				if( parse_context === CONTEXT_UNKNOWN$1 ){
+					elements = tmpobj;
+				} else if( parse_context == CONTEXT_IN_ARRAY$1 ) ; else if( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 || parse_context == CONTEXT_CLASS_VALUE$1 ) {
+					if( !val.name && current_class ){
+						val.name = current_class.fields[current_class_field++];
+						//_DEBUG_PARSING_DETAILS && console.log( "B Stepping current class field:", val, current_class_field, val.name );
+					}
+					//_DEBUG_PARSING_DETAILS && console.log( "Setting element:", val.name, tmpobj );
+					elements[val.name] = tmpobj;
+				}
+
+				old_context.context = parse_context;
+				old_context.elements = elements;
+				//old_context.element_array = element_array;
+				old_context.name = val.name;
+				//_DEBUG_PARSING_DETAILS && console.log( "pushing val.name:", val.name, arrayType );
+				old_context.current_proto = current_proto;
+				old_context.current_class = current_class;
+				old_context.current_class_field = current_class_field;
+				old_context.valueType = val.value_type;
+				old_context.arrayType = arrayType; // pop that we don't want to have this value re-pushed.
+				old_context.className = val.className;
+				//arrayType = -3; // this doesn't matter, it's an object state, and a new array will reset to -1
+				val.className = null;
+				val.name = null;
+				current_proto = protoDef;
+				current_class = cls;
+				//console.log( "Setting current class:", current_class.name );
+				current_class_field = 0;
+				elements = tmpobj;
+				if( !rootObject ) rootObject = elements;
+				//_DEBUG_PARSING_STACK && console.log( "push context (open object): ", context_stack.length, " new mode:", nextMode );
+				context_stack.push( old_context );
+				//_DEBUG_PARSING_DETAILS && console.log( "RESET OBJECT FIELD", old_context, context_stack );
+				RESET_VAL();
+				parse_context = nextMode;
+				return true;
+			}
+
+			function openArray() {
+				//_DEBUG_PARSING_DETAILS && console.log( "openArray()..." );
+				if( word > WORD_POS_RESET$1 && word < WORD_POS_FIELD$1 )
+					recoverIdent( 91 );
+
+				if( word == WORD_POS_END$1 && val.string.length ) {
+					//_DEBUG_PARSING && console.log( "recover arrayType:", arrayType, val.string );
+					var typeIndex = knownArrayTypeNames$1.findIndex( type=>(type === val.string) );
+					if( typeIndex >= 0 ) {
+						word = WORD_POS_RESET$1;
+						arrayType = typeIndex;
+						val.className = val.string;
+						val.string = null;
+					} else {
+						if( val.string === "ref" ) {
+							val.className = null;
+							//_DEBUG_PARSING_DETAILS && console.log( "This will be a reference recovery for key:", val );
+							arrayType = -2;
+						} else {
+							if( localFromProtoTypes.get( val.string ) ) {
+								val.className = val.string;
+							} 
+							else if( fromProtoTypes$1.get( val.string ) ) {
+								val.className = val.string;
+							} else
+								throwError( `Unknown type '${val.string}' specified for array`, cInt );
+							//_DEBUG_PARSING_DETAILS && console.log( " !!!!!A Set Classname:", val.className );
+						}
+					}
+				} else if( parse_context == CONTEXT_OBJECT_FIELD$1 || word == WORD_POS_FIELD$1 || word == WORD_POS_AFTER_FIELD$1 ) {
+					throwError( "Fault while parsing; while getting field name unexpected", cInt );
+					status = false;
+					return false;
+				}
+				{
+					let old_context = getContext$1();
+					//_DEBUG_PARSING && console.log( "Begin a new array; previously pushed into elements; but wait until trailing comma or close previously ", val.value_type );
+
+					//_DEBUG_PARSING_DETAILS && console.log( "Opening array:", val, parse_context );
+					val.value_type = VALUE_ARRAY$1;
+					let tmparr = [];
+					if( parse_context == CONTEXT_UNKNOWN$1 )
+						elements = tmparr;
+					else if( parse_context == CONTEXT_IN_ARRAY$1 ) {
+						if( arrayType == -1 ){
+							//console.log( "Pushing new opening array into existing array already RE-SET" );
+							elements.push( tmparr );
+						} //else if( //_DEBUG_PARSING && arrayType !== -3 )
+						//	console.log( "This is an invalid parsing state, typed array with sub-array elements" );
+					} else if( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 ) {
+						if( !val.name ) {
+							console.log( "This says it's resolved......." );
+							arrayType = -3;
+						}
+
+						if( current_proto && current_proto.protoDef ) {
+							//_DEBUG_PARSING_DETAILS && console.log( "SOMETHING SHOULD HAVE BEEN REPLACED HERE??", current_proto );
+							//_DEBUG_PARSING_DETAILS && console.log( "(need to do fromprototoypes here) object:", val, value );
+							if( current_proto.protoDef.cb ){
+								const newarr = current_proto.protoDef.cb.call( elements, val.name, tmparr );
+								if( newarr !== undefined ) tmparr = elements[val.name] = newarr;
+								else console.log( "Warning: Received undefined for an array; keeping original array, not setting field" );
+							}else
+								elements[val.name] = tmparr;
+						}
+						else
+							elements[val.name] = tmparr;
+					}
+					old_context.context = parse_context;
+					old_context.elements = elements;
+					//old_context.element_array = element_array;
+					old_context.name = val.name;
+					old_context.current_proto = current_proto;
+					old_context.current_class = current_class;
+					old_context.current_class_field = current_class_field;
+					// already pushed?
+					old_context.valueType = val.value_type;
+					old_context.arrayType = (arrayType==-1)?-3:arrayType; // pop that we don't want to have this value re-pushed.
+					old_context.className = val.className;
+					arrayType = -1;
+					val.className = null;
+
+					//_DEBUG_PARSING_DETAILS && console.log( " !!!!!B Clear Classname:", old_context, val.className, old_context.className, old_context.name );
+					val.name = null;
+					current_proto = null;
+					current_class = null;
+					current_class_field = 0;
+					//element_array = tmparr;
+					elements = tmparr;
+					if( !rootObject ) rootObject = tmparr;
+					//_DEBUG_PARSING_STACK && console.log( "push context (open array): ", context_stack.length );
+					context_stack.push( old_context );
+					//_DEBUG_PARSING_DETAILS && console.log( "RESET ARRAY FIELD", old_context, context_stack );
+
+					RESET_VAL();
+					parse_context = CONTEXT_IN_ARRAY$1;
+				}
+				return true;
+			}
+
+			function getProto() {
+				const result = {protoDef:null,cls:null};
+				if( ( result.protoDef = localFromProtoTypes.get( val.string ) ) ) {
+					if( !val.className ){
+						val.className = val.string;
+						val.string = null;
+					}
+					// need to collect the object, 
+				}
+				else if( ( result.protoDef = fromProtoTypes$1.get( val.string ) ) ) {
+					if( !val.className ){
+						val.className = val.string;
+						val.string = null;
+					}
+				} 
+				if( val.string )
+				{
+					result.cls = classes.find( cls=>cls.name === val.string );
+				}
+				return (result.protoDef||result.cls)?result:null;
+			}
+
+			if( !status )
+				return -1;
+
+			if( msg && msg.length ) {
+				input = getBuffer$1();
+				input.buf = msg;
+				inQueue.push( input );
+			} else {
+				if( gatheringNumber ) {
+					//console.log( "Force completed.")
+					gatheringNumber = false;
+					val.value_type = VALUE_NUMBER$1;
+					if( parse_context == CONTEXT_UNKNOWN$1 ) {
+						completed = true;
+					}
+					retval = 1;  // if returning buffers, then obviously there's more in this one.
+				}
+				if( parse_context !== CONTEXT_UNKNOWN$1 )
+					throwError( "Unclosed object at end of stream.", cInt );
+			}
+
+			while( status && ( input = inQueue.shift() ) ) {
+				n = input.n;
+				buf = input.buf;
+				if( gatheringString ) {
+					let string_status = gatherString( gatheringStringFirstChar );
+					if( string_status < 0 )
+						status = false;
+					else if( string_status > 0 ) {
+						gatheringString = false;
+						if( status ) val.value_type = VALUE_STRING$1;
+					}
+				}
+				if( gatheringNumber ) {
+					collectNumber();
+				}
+
+				while( !completed && status && ( n < buf.length ) ) {
+					str = buf.charAt(n);
+					cInt = buf.codePointAt(n++);
+					if( cInt >= 0x10000 ) { str += buf.charAt(n); n++; }
+					//_DEBUG_PARSING && console.log( "parsing at ", cInt, str );
+					//_DEBUG_LL && console.log( "processing: ", cInt, n, str, pos, comment, parse_context, word );
+					pos.col++;
+					if( comment ) {
+						if( comment == 1 ) {
+							if( cInt == 42/*'*'*/ ) comment = 3;
+							else if( cInt != 47/*'/'*/ ) return throwError( "fault while parsing;", cInt );
+							else comment = 2;
+						}
+						else if( comment == 2 ) {
+							if( cInt == 10/*'\n'*/ || cInt == 13/*'\r'*/  ) comment = 0;
+						}
+						else if( comment == 3 ) {
+							if( cInt == 42/*'*'*/ ) comment = 4;
+						}
+						else {
+							if( cInt == 47/*'/'*/ ) comment = 0;
+							else comment = 3;
+						}
+						continue;
+					}
+					switch( cInt ) {
+					case 47/*'/'*/:
+						comment = 1;
+						break;
+					case 123/*'{'*/:
+						openObject();
+						break;
+					case 91/*'['*/:
+						openArray();
+						break;
+
+					case 58/*':'*/:
+						//_DEBUG_PARSING && console.log( "colon received...")
+						if( parse_context == CONTEXT_CLASS_VALUE$1 ) {
+							word = WORD_POS_RESET$1;
+							val.name = val.string;
+							val.string = '';
+							val.value_type = VALUE_UNSET$1;
+							
+						} else if( parse_context == CONTEXT_OBJECT_FIELD$1
+							|| parse_context == CONTEXT_CLASS_FIELD$1  ) {
+							if( parse_context == CONTEXT_CLASS_FIELD$1 ) {
+								if( !Object.keys( elements).length ) {
+									 console.log( "This is a full object, not a class def...", val.className );
+								const privateProto = ()=>{}; 
+								localFromProtoTypes.set( context_stack.last.node.current_class.name,
+														{ protoCon:privateProto.prototype.constructor
+														, cb: null }
+													   );
+								elements = new privateProto();
+								parse_context = CONTEXT_OBJECT_FIELD_VALUE$1;
+								val.name = val.string;
+								word = WORD_POS_RESET$1;
+								val.string = '';
+								val.value_type = VALUE_UNSET$1;
+								console.log( "don't do default;s do a revive..." );
+								}
+							} else {
+								if( word != WORD_POS_RESET$1
+								   && word != WORD_POS_END$1
+								   && word != WORD_POS_FIELD$1
+								   && word != WORD_POS_AFTER_FIELD$1 ) {
+									recoverIdent( 32 );
+									// allow starting a new word
+									//status = false;
+									//throwError( `fault while parsing; unquoted keyword used as object field name (state:${word})`, cInt );
+									//break;
+								}
+								word = WORD_POS_RESET$1;
+								val.name = val.string;
+								val.string = '';
+								parse_context = (parse_context===CONTEXT_OBJECT_FIELD$1)?CONTEXT_OBJECT_FIELD_VALUE$1:CONTEXT_CLASS_FIELD_VALUE$1;
+								val.value_type = VALUE_UNSET$1;
+							}
+						}
+						else if( parse_context == CONTEXT_UNKNOWN$1 ){
+							console.log( "Override colon found, allow class redefinition", parse_context );
+							redefineClass = true;
+							break;
+						} else {
+							if( parse_context == CONTEXT_IN_ARRAY$1 )
+								throwError(  "(in array, got colon out of string):parsing fault;", cInt );
+							else if( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 ){
+								throwError( "String unexpected", cInt );
+							} else
+								throwError( "(outside any object, got colon out of string):parsing fault;", cInt );
+							status = false;
+						}
+						break;
+					case 125/*'}'*/:
+						//_DEBUG_PARSING && console.log( "close bracket context:", word, parse_context, val.value_type, val.string );
+						if( word == WORD_POS_END$1 ) {
+							// allow starting a new word
+							word = WORD_POS_RESET$1;
+						}
+						// coming back after pushing an array or sub-object will reset the contxt to FIELD, so an end with a field should still push value.
+						if( parse_context == CONTEXT_CLASS_FIELD$1 ) {
+							if( current_class ) {
+								// allow blank comma at end to not be a field
+								if(val.string) { current_class.fields.push( val.string ); }
+
+								RESET_VAL();
+								let old_context = context_stack.pop();
+								//_DEBUG_PARSING_DETAILS && console.log( "close object:", old_context, context_stack );
+								//_DEBUG_PARSING_STACK && console.log( "object pop stack (close obj)", context_stack.length, old_context );
+								parse_context = CONTEXT_UNKNOWN$1; // this will restore as IN_ARRAY or OBJECT_FIELD
+								word = WORD_POS_RESET$1;
+								val.name = old_context.name;
+								elements = old_context.elements;
+								//element_array = old_context.element_array;
+								current_class = old_context.current_class;
+								current_class_field = old_context.current_class_field;
+								//_DEBUG_PARSING_DETAILS && console.log( "A Pop old class field counter:", current_class_field, val.name );
+								arrayType = old_context.arrayType;
+								val.value_type = old_context.valueType;
+								val.className = old_context.className;
+								//_DEBUG_PARSING_DETAILS && console.log( " !!!!!C Pop Classname:", val.className );
+								rootObject = null;
+
+								dropContext$1( old_context );
+							} else {
+								throwError( "State error; gathering class fields, and lost the class", cInt );
+							}
+						} else if( ( parse_context == CONTEXT_OBJECT_FIELD$1 ) || ( parse_context == CONTEXT_CLASS_VALUE$1 ) ) {
+							if( val.value_type != VALUE_UNSET$1 ) {
+								if( current_class ) {
+									//_DEBUG_PARSING_DETAILS && console.log( "C Stepping current class field:", current_class_field, val.name, arrayType );
+									val.name = current_class.fields[current_class_field++];
+								}
+								//_DEBUG_PARSING && console.log( "Closing object; set value name, and push...", current_class_field, val );
+								objectPush();
+							}
+							//_DEBUG_PARSING && console.log( "close object; empty object", val, elements );
+
+								val.value_type = VALUE_OBJECT$1;
+								if( current_proto && current_proto.protoDef ) {
+									console.log( "SOMETHING SHOULD AHVE BEEN REPLACED HERE??", current_proto );
+									console.log( "The other version only revives on init" );
+									elements = new current_proto.protoDef.cb( elements, undefined, undefined );
+									//elements = new current_proto.protoCon( elements );
+								}
+								val.contains = elements;
+								val.string = "";
+
+							let old_context = context_stack.pop();
+							//_DEBUG_PARSING_STACK && console.log( "object pop stack (close obj)", context_stack.length, old_context );
+							parse_context = old_context.context; // this will restore as IN_ARRAY or OBJECT_FIELD
+							val.name = old_context.name;
+							elements = old_context.elements;
+							//element_array = old_context.element_array;
+							current_class = old_context.current_class;
+							current_proto = old_context.current_proto;
+							current_class_field = old_context.current_class_field;
+							//_DEBUG_PARSING_DETAILS && console.log( "B Pop old class field counter:", context_stack, current_class_field, val.name );
+							arrayType = old_context.arrayType;
+							val.value_type = old_context.valueType;
+							val.className = old_context.className;
+							//_DEBUG_PARSING_DETAILS && console.log( " !!!!!D Pop Classname:", val.className );
+							dropContext$1( old_context );
+
+							if( parse_context == CONTEXT_UNKNOWN$1 ) {
+								completed = true;
+							}
+						}
+						else if( ( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 ) ) {
+							// first, add the last value
+							//_DEBUG_PARSING && console.log( "close object; push item '%s' %d", val.name, val.value_type );
+							if( val.value_type === VALUE_UNSET$1 ) {
+								throwError( "Fault while parsing; unexpected", cInt );
+							}
+							objectPush();
+							val.value_type = VALUE_OBJECT$1;
+							val.contains = elements;
+							word = WORD_POS_RESET$1;
+
+							//let old_context = context_stack.pop();
+							var old_context = context_stack.pop();
+							//_DEBUG_PARSING_STACK  && console.log( "object pop stack (close object)", context_stack.length, old_context );
+							parse_context = old_context.context; // this will restore as IN_ARRAY or OBJECT_FIELD
+							val.name = old_context.name;
+							elements = old_context.elements;
+							current_proto = old_context.current_proto;
+							current_class = old_context.current_class;
+							current_class_field = old_context.current_class_field;
+							//_DEBUG_PARSING_DETAILS && console.log( "C Pop old class field counter:", context_stack, current_class_field, val.name );
+							arrayType = old_context.arrayType;
+							val.value_type = old_context.valueType;
+							val.className = old_context.className;
+							//_DEBUG_PARSING_DETAILS && console.log( " !!!!!E Pop Classname:", val.className );
+							//element_array = old_context.element_array;
+							dropContext$1( old_context );
+							if( parse_context == CONTEXT_UNKNOWN$1 ) {
+								completed = true;
+							}
+						}
+						else {
+							throwError( "Fault while parsing; unexpected", cInt );
+							status = false;
+						}
+						negative = false;
+						break;
+					case 93/*']'*/:
+						if( word >= WORD_POS_AFTER_FIELD$1 ) {
+							word = WORD_POS_RESET$1;
+						}
+						if( parse_context == CONTEXT_IN_ARRAY$1 ) {
+							
+							//_DEBUG_PARSING  && console.log( "close array, push last element: %d", val.value_type );
+							if( val.value_type != VALUE_UNSET$1 ) {
+								if( val.name ) console.log( "Ya this should blow up" );
+								arrayPush();
+							}
+							val.contains = elements;
+							{
+								let old_context = context_stack.pop();
+								//_DEBUG_PARSING_STACK  && console.log( "object pop stack (close array)", context_stack.length );
+								val.name = old_context.name;
+								val.className = old_context.className;
+								parse_context = old_context.context;
+								elements = old_context.elements;
+								//element_array = old_context.element_array;
+								current_proto = old_context.current_proto;
+								current_class = old_context.current_class;
+								current_class_field = old_context.current_class_field;
+								arrayType = old_context.arrayType;
+								val.value_type = old_context.valueType;
+								//_DEBUG_PARSING_DETAILS && console.log( "close array:", old_context );
+								//_DEBUG_PARSING_DETAILS && console.log( "D Pop old class field counter:", context_stack, current_class_field, val );
+								dropContext$1( old_context );
+							}
+							val.value_type = VALUE_ARRAY$1;
+							if( parse_context == CONTEXT_UNKNOWN$1 ) {
+								completed = true;
+							}
+						} else {
+							throwError( `bad context ${parse_context}; fault while parsing`, cInt );// fault
+							status = false;
+						}
+						negative = false;
+						break;
+					case 44/*','*/:
+						if( word < WORD_POS_AFTER_FIELD$1 && word != WORD_POS_RESET$1 ) {
+							recoverIdent(cInt);
+						}
+						if( word == WORD_POS_END$1 || word == WORD_POS_FIELD$1 ) word = WORD_POS_RESET$1;  // allow collect new keyword
+						//if(//_DEBUG_PARSING) 
+						//_DEBUG_PARSING_DETAILS && console.log( "comma context:", parse_context, val );
+						if( parse_context == CONTEXT_CLASS_FIELD$1 ) {
+							if( current_class ) {
+								console.log( "Saving field name(set word to IS A FIELD):", val.string );
+								current_class.fields.push( val.string );
+								val.string = '';
+								word = WORD_POS_FIELD$1;
+							} else {
+								throwError( "State error; gathering class fields, and lost the class", cInt );
+							}
+						} else if( parse_context == CONTEXT_OBJECT_FIELD$1 ) {
+							if( current_class ) {
+								//_DEBUG_PARSING_DETAILS && console.log( "D Stepping current class field:", current_class_field, val.name );
+								val.name = current_class.fields[current_class_field++];
+								//_DEBUG_PARSING && console.log( "should have a completed value at a comma.:", current_class_field, val );
+								if( val.value_type != VALUE_UNSET$1 ) {
+									//_DEBUG_PARSING  && console.log( "pushing object field:", val );
+									objectPush();
+									RESET_VAL();
+								}
+							} else {
+								// this is an empty comma...
+								if( val.string || val.value_type )
+									throwError( "State error; comma in field name and/or lost the class", cInt );
+							}
+						} else if( parse_context == CONTEXT_CLASS_VALUE$1 ) {
+							if( current_class ) {
+								//_DEBUG_PARSING_DETAILS && console.log( "reviving values in class...", arrayType, current_class.fields[current_class_field ], val );
+								if( arrayType != -3 && !val.name ) {
+									// this should have still had a name....
+									//_DEBUG_PARSING_DETAILS && console.log( "E Stepping current class field:", current_class_field, val, arrayType );
+									val.name = current_class.fields[current_class_field++];
+									//else val.name = current_class.fields[current_class_field++];
+								}
+								//_DEBUG_PARSING && console.log( "should have a completed value at a comma.:", current_class_field, val );
+								if( val.value_type != VALUE_UNSET$1 ) {
+									if( arrayType != -3 )
+										objectPush();
+									RESET_VAL();
+								}
+							} else {
+								
+								if( val.value_type != VALUE_UNSET$1 ) {
+									objectPush();
+									RESET_VAL();
+								}
+								//throwError( "State error; gathering class values, and lost the class", cInt );
+							}
+							val.name = null;
+						} else if( parse_context == CONTEXT_IN_ARRAY$1 ) {
+							if( val.value_type == VALUE_UNSET$1 )
+								val.value_type = VALUE_EMPTY$1; // in an array, elements after a comma should init as undefined...
+
+							//_DEBUG_PARSING  && console.log( "back in array; push item %d", val.value_type );
+							arrayPush();
+							RESET_VAL();
+							word = WORD_POS_RESET$1;
+							// undefined allows [,,,] to be 4 values and [1,2,3,] to be 4 values with an undefined at end.
+						} else if( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 && val.value_type != VALUE_UNSET$1 ) {
+							// after an array value, it will have returned to OBJECT_FIELD anyway
+							//_DEBUG_PARSING  && console.log( "comma after field value, push field to object: %s", val.name, val.value_type );
+							parse_context = CONTEXT_OBJECT_FIELD$1;
+							if( val.value_type != VALUE_UNSET$1 ) {
+								objectPush();
+								RESET_VAL();
+							}
+							word = WORD_POS_RESET$1;
+						} else {
+							status = false;
+							throwError( "bad context; excessive commas while parsing;", cInt );// fault
+						}
+						negative = false;
+						break;
+
+					default:
+						switch( cInt ) {
+						default:
+						if( ( parse_context == CONTEXT_UNKNOWN$1 )
+						  || ( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 && word == WORD_POS_FIELD$1 )
+						  || ( ( parse_context == CONTEXT_OBJECT_FIELD$1 ) || word == WORD_POS_FIELD$1 )
+						  || ( parse_context == CONTEXT_CLASS_FIELD$1 ) ) {
+							switch( cInt ) {
+							case 96://'`':
+							case 34://'"':
+							case 39://'\'':
+								if( word == WORD_POS_RESET$1 || word == WORD_POS_FIELD$1 ) {
+									if( val.string.length ) {
+										console.log( "IN ARRAY AND FIXING?" );
+										val.className = val.string;
+										val.string = '';
+									}
+									let string_status = gatherString(cInt );
+									//_DEBUG_PARSING && console.log( "string gather for object field name :", val.string, string_status );
+									if( string_status ) {
+										val.value_type = VALUE_STRING$1;
+									} else {
+										gatheringStringFirstChar = cInt;
+										gatheringString = true;
+									}
+								} else {
+									throwError( "fault while parsing; quote not at start of field name", cInt );
+								}
+
+								break;
+							case 10://'\n':
+								pos.line++;
+								pos.col = 1;
+								// fall through to normal space handling - just updated line/col position
+							case 13://'\r':
+							case 32://' ':
+							case 0x2028://' ':
+							case 0x2029://' ':
+							case 9://'\t':
+							case 0xFEFF: // ZWNBS is WS though
+								 //_DEBUG_WHITESPACE  && console.log( "THIS SPACE", word, parse_context, val );
+								if( parse_context === CONTEXT_UNKNOWN$1 && word === WORD_POS_END$1 ) { // allow collect new keyword
+									word = WORD_POS_RESET$1;
+									if( parse_context === CONTEXT_UNKNOWN$1 ) {
+										completed = true;
+									}
+									break;
+								}
+								if( word === WORD_POS_RESET$1 || word === WORD_POS_AFTER_FIELD$1 ) { // ignore leading and trailing whitepsace
+									if( parse_context == CONTEXT_UNKNOWN$1 && val.value_type ) {
+										completed = true;
+									}
+									break;
+								}
+								else if( word === WORD_POS_FIELD$1 ) {
+									if( parse_context === CONTEXT_UNKNOWN$1 ) {
+										word = WORD_POS_RESET$1;
+										completed = true;
+										break;
+									}
+									if( val.string.length )
+										console.log( "STEP TO NEXT TOKEN." );
+										word = WORD_POS_AFTER_FIELD$1;
+										//val.className = val.string; val.string = '';
+								}
+								else {
+									status = false;
+									throwError( "fault while parsing; whitepsace unexpected", cInt );
+								}
+								// skip whitespace
+								break;
+							default:
+								//console.log( "TICK" );
+								if( word == WORD_POS_RESET$1 && ( ( cInt >= 48/*'0'*/ && cInt <= 57/*'9'*/ ) || ( cInt == 43/*'+'*/ ) || ( cInt == 46/*'.'*/ ) || ( cInt == 45/*'-'*/ ) ) ) {
+									fromHex = false;
+									exponent = false;
+									date_format = false;
+									isBigInt = false;
+
+									exponent_sign = false;
+									exponent_digit = false;
+									decimal = false;
+									val.string = str;
+									input.n = n;
+									collectNumber();
+									break;
+								}
+
+								if( word === WORD_POS_AFTER_FIELD$1 ) {
+									status = false;
+									throwError( "fault while parsing; character unexpected", cInt );
+								}
+								if( word === WORD_POS_RESET$1 ) {
+									word = WORD_POS_FIELD$1;
+									val.value_type = VALUE_STRING$1;
+									val.string += str;
+									//_DEBUG_PARSING  && console.log( "START/CONTINUE IDENTIFER" );
+									break;
+
+								}     
+								if( val.value_type == VALUE_UNSET$1 ) {
+									if( word !== WORD_POS_RESET$1 && word !== WORD_POS_END$1 )
+										recoverIdent( cInt );
+								} else {
+									if( word === WORD_POS_END$1 || word === WORD_POS_FIELD$1 ) {
+										// final word of the line... 
+										// whispace changes the 'word' state to not 'end'
+										// until the next character, which may restore it to
+										// 'end' and this will resume collecting the same string.
+										val.string += str;
+										break;
+									}
+									if( parse_context == CONTEXT_OBJECT_FIELD$1 ) {
+										if( word == WORD_POS_FIELD$1 ) {
+											val.string+=str;
+											break;
+										}
+										throwError( "Multiple values found in field name", cInt );
+									}
+									if( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 ) {
+										throwError( "String unexpected", cInt );
+									}
+								}
+								break; // default
+							}
+							
+						}else {
+							if( word == WORD_POS_RESET$1 && ( ( cInt >= 48/*'0'*/ && cInt <= 57/*'9'*/ ) || ( cInt == 43/*'+'*/ ) || ( cInt == 46/*'.'*/ ) || ( cInt == 45/*'-'*/ ) ) ) {
+								fromHex = false;
+								exponent = false;
+								date_format = false;
+								isBigInt = false;
+
+								exponent_sign = false;
+								exponent_digit = false;
+								decimal = false;
+								val.string = str;
+								input.n = n;
+								collectNumber();
+							} else {
+								//console.log( "TICK")
+								if( val.value_type == VALUE_UNSET$1 ) {
+									if( word != WORD_POS_RESET$1 ) {
+										recoverIdent( cInt );
+									} else {
+										word = WORD_POS_END$1;
+										val.string += str;
+										val.value_type = VALUE_STRING$1;
+									}
+								} else {
+									if( parse_context == CONTEXT_OBJECT_FIELD$1 ) {
+										throwError( "Multiple values found in field name", cInt );
+									}
+									else if( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 ) {
+
+										if( val.value_type != VALUE_STRING$1 ) {
+											if( val.value_type == VALUE_OBJECT$1 || val.value_type == VALUE_ARRAY$1 ){
+												throwError( "String unexpected", cInt );
+											}
+											recoverIdent(cInt);
+										}
+										if( word == WORD_POS_AFTER_FIELD$1 ){
+											const  protoDef = getProto();
+											if( protoDef){
+												val.string = str;
+											}
+											else 
+												throwError( "String unexpected", cInt );
+										} else {
+											if( word == WORD_POS_END$1 ) {
+												val.string += str;
+											}else
+												throwError( "String unexpected", cInt );
+										}
+									}
+									else if( parse_context == CONTEXT_IN_ARRAY$1 ) {
+										if( word == WORD_POS_AFTER_FIELD$1 ){
+											if( !val.className ){
+												//	getProto()
+												val.className = val.string;
+												val.string = '';
+											}
+											val.string += str;
+											break;
+										} else {
+											if( word == WORD_POS_END$1 )
+												val.string += str;
+										}
+
+									}
+								}
+								
+								//recoverIdent(cInt);
+							}
+							break; // default
+						}
+						break;
+						case 96://'`':
+						case 34://'"':
+						case 39://'\'':
+						{
+							let string_status = gatherString( cInt );
+							//_DEBUG_PARSING && console.log( "string gather for object field value :", val.string, string_status, completed, input.n, buf.length );
+							if( string_status ) {
+								val.value_type = VALUE_STRING$1;
+								word = WORD_POS_END$1;
+							} else {
+								gatheringStringFirstChar = cInt;
+								gatheringString = true;
+							}
+							break;
+						}
+						case 10://'\n':
+							pos.line++;
+							pos.col = 1;
+							//falls through
+						case 32://' ':
+						case 9://'\t':
+						case 13://'\r':
+						case 0x2028: // LS (Line separator)
+						case 0x2029: // PS (paragraph separate)
+						case 0xFEFF://'\uFEFF':
+							//_DEBUG_WHITESPACE && console.log( "Whitespace...", word, parse_context );
+							if( word == WORD_POS_END$1 ) {
+								if( parse_context == CONTEXT_UNKNOWN$1 ) {
+									word = WORD_POS_RESET$1;
+									completed = true;
+									break;
+								} else if( parse_context == CONTEXT_OBJECT_FIELD_VALUE$1 ) {
+									word = WORD_POS_AFTER_FIELD_VALUE$1;
+									break;
+								} else if( parse_context == CONTEXT_OBJECT_FIELD$1 ) {
+									word = WORD_POS_AFTER_FIELD$1;
+									break;
+								} else if( parse_context == CONTEXT_IN_ARRAY$1 ) {
+									word = WORD_POS_AFTER_FIELD$1;
+									break;
+								}
+							}
+							if( word == WORD_POS_RESET$1 || ( word == WORD_POS_AFTER_FIELD$1 ))
+								break;
+							else if( word == WORD_POS_FIELD$1 ) {
+								if( val.string.length )
+									word = WORD_POS_AFTER_FIELD$1;
+							}
+							else {
+								if( word < WORD_POS_END$1 ) 
+									recoverIdent( cInt );
+							}
+							break;
+					//----------------------------------------------------------
+					//  catch characters for true/false/null/undefined which are values outside of quotes
+						case 116://'t':
+							if( word == WORD_POS_RESET$1 ) word = WORD_POS_TRUE_1$1;
+							else if( word == WORD_POS_INFINITY_6$1 ) word = WORD_POS_INFINITY_7$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 114://'r':
+							if( word == WORD_POS_TRUE_1$1 ) word = WORD_POS_TRUE_2$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 117://'u':
+							if( word == WORD_POS_TRUE_2$1 ) word = WORD_POS_TRUE_3$1;
+							else if( word == WORD_POS_NULL_1$1 ) word = WORD_POS_NULL_2$1;
+							else if( word == WORD_POS_RESET$1 ) word = WORD_POS_UNDEFINED_1$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 101://'e':
+							if( word == WORD_POS_TRUE_3$1 ) {
+								val.value_type = VALUE_TRUE$1;
+								word = WORD_POS_END$1;
+							} else if( word == WORD_POS_FALSE_4$1 ) {
+								val.value_type = VALUE_FALSE$1;
+								word = WORD_POS_END$1;
+							} else if( word == WORD_POS_UNDEFINED_3$1 ) word = WORD_POS_UNDEFINED_4$1;
+							else if( word == WORD_POS_UNDEFINED_7$1 ) word = WORD_POS_UNDEFINED_8$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 110://'n':
+							if( word == WORD_POS_RESET$1 ) word = WORD_POS_NULL_1$1;
+							else if( word == WORD_POS_UNDEFINED_1$1 ) word = WORD_POS_UNDEFINED_2$1;
+							else if( word == WORD_POS_UNDEFINED_6$1 ) word = WORD_POS_UNDEFINED_7$1;
+							else if( word == WORD_POS_INFINITY_1$1 ) word = WORD_POS_INFINITY_2$1;
+							else if( word == WORD_POS_INFINITY_4$1 ) word = WORD_POS_INFINITY_5$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 100://'d':
+							if( word == WORD_POS_UNDEFINED_2$1 ) word = WORD_POS_UNDEFINED_3$1;
+							else if( word == WORD_POS_UNDEFINED_8$1 ) { val.value_type=VALUE_UNDEFINED$1; word = WORD_POS_END$1; }
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 105://'i':
+							if( word == WORD_POS_UNDEFINED_5$1 ) word = WORD_POS_UNDEFINED_6$1;
+							else if( word == WORD_POS_INFINITY_3$1 ) word = WORD_POS_INFINITY_4$1;
+							else if( word == WORD_POS_INFINITY_5$1 ) word = WORD_POS_INFINITY_6$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 108://'l':
+							if( word == WORD_POS_NULL_2$1 ) word = WORD_POS_NULL_3$1;
+							else if( word == WORD_POS_NULL_3$1 ) {
+								val.value_type = VALUE_NULL$1;
+								word = WORD_POS_END$1;
+							} else if( word == WORD_POS_FALSE_2$1 ) word = WORD_POS_FALSE_3$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 102://'f':
+							if( word == WORD_POS_RESET$1 ) word = WORD_POS_FALSE_1$1;
+							else if( word == WORD_POS_UNDEFINED_4$1 ) word = WORD_POS_UNDEFINED_5$1;
+							else if( word == WORD_POS_INFINITY_2$1 ) word = WORD_POS_INFINITY_3$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 97://'a':
+							if( word == WORD_POS_FALSE_1$1 ) word = WORD_POS_FALSE_2$1;
+							else if( word == WORD_POS_NAN_1$1 ) word = WORD_POS_NAN_2$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 115://'s':
+							if( word == WORD_POS_FALSE_3$1 ) word = WORD_POS_FALSE_4$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 73://'I':
+							if( word == WORD_POS_RESET$1 ) word = WORD_POS_INFINITY_1$1;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 78://'N':
+							if( word == WORD_POS_RESET$1 ) word = WORD_POS_NAN_1$1;
+							else if( word == WORD_POS_NAN_2$1 ) { val.value_type = negative ? VALUE_NEG_NAN$1 : VALUE_NAN$1; negative = false; word = WORD_POS_END$1; }
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 121://'y':
+							if( word == WORD_POS_INFINITY_7$1 ) { val.value_type = negative ? VALUE_NEG_INFINITY$1 : VALUE_INFINITY$1; negative = false; word = WORD_POS_END$1; }
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 45://'-':
+							if( word == WORD_POS_RESET$1 ) negative = !negative;
+							else { recoverIdent(cInt); }// fault
+							break;
+						case 43://'+':
+							if( word !== WORD_POS_RESET$1 ) { recoverIdent(cInt); }
+							break;
+						}
+						break; // default of high level switch
+					//
+					//----------------------------------------------------------
+					}
+					if( completed ) {
+						if( word == WORD_POS_END$1 ) {
+							word = WORD_POS_RESET$1;
+						}
+						break;
+					}
+				}
+
+				if( n == buf.length ) {
+					dropBuffer$1( input );
+					if( gatheringString || gatheringNumber || parse_context == CONTEXT_OBJECT_FIELD$1 ) {
+						retval = 0;
+					}
+					else {
+						if( parse_context == CONTEXT_UNKNOWN$1 && ( val.value_type != VALUE_UNSET$1 || result ) ) {
+							completed = true;
+							retval = 1;
+						}
+					}
+				}
+				else {
+					// put these back into the stack.
+					input.n = n;
+					inQueue.unshift( input );
+					retval = 2;  // if returning buffers, then obviously there's more in this one.
+				}
+				if( completed ) {
+					rootObject = null;
+					break;
+				}
+			}
+
+			if( !status ) return -1;
+			if( completed && val.value_type != VALUE_UNSET$1 ) {
+				word = WORD_POS_RESET$1;
+				result = convertValue();
+				//_DEBUG_PARSING && console.log( "Result(3):", result );
+				negative = false;
+				val.string = '';
+				val.value_type = VALUE_UNSET$1;
+			}
+			completed = false;
+			return retval;
+		}
+	}
+};
+
+
+
+const _parser$1 = [Object.freeze( JSOX$2.begin() )];
+var _parse_level$1 = 0;
+JSOX$2.parse = function( msg, reviver ) {
+	var parse_level = _parse_level$1++;
+	var parser;
+	if( _parser$1.length <= parse_level )
+		_parser$1.push( Object.freeze( JSOX$2.begin() ) );
+	parser = _parser$1[parse_level];
+	if (typeof msg !== "string") msg = String(msg);
+	parser.reset();
+	const writeResult = parser._write( msg, true );
+	if( writeResult > 0 ) {
+		var result = parser.value();
+		if( ( "undefined" === typeof result ) && writeResult > 1 ){
+			throw new Error( "Pending value could not complete");
+		}
+
+		result = typeof reviver === 'function' ? (function walk(holder, key) {
+			var k, v, value = holder[key];
+			if (value && typeof value === 'object') {
+				for (k in value) {
+					if (Object.prototype.hasOwnProperty.call(value, k)) {
+						v = walk(value, k);
+						if (v !== undefined) {
+							value[k] = v;
+						} else {
+							delete value[k];
+						}
+					}
+				}
+			}
+			return reviver.call(holder, key, value);
+		}({'': result}, '')) : result;
+		_parse_level$1--;
+		return result;
+	}
+	parser.finalError();
+	return undefined;
+};
+
+
+/* init prototypes */
+{
+	toProtoTypes$1.set( Object.prototype, { external:false, name:Object.prototype.constructor.name, cb:null } );
+
+
+	// function https://stackoverflow.com/a/17415677/4619267
+	toProtoTypes$1.set( Date.prototype, { external:false,
+		name : "Date",
+		cb : function () {
+			var tzo = -this.getTimezoneOffset(),
+				dif = tzo >= 0 ? '+' : '-',
+				pad = function(num) {
+					var norm = Math.floor(Math.abs(num));
+					return (norm < 10 ? '0' : '') + norm;
+				},
+				pad3 = function(num) {
+					var norm = Math.floor(Math.abs(num));
+					return (norm < 100 ? '0' : '') + (norm < 10 ? '0' : '') + norm;
+				};
+			return [this.getFullYear() ,
+				'-' , pad(this.getMonth() + 1) ,
+				'-' , pad(this.getDate()) ,
+				'T' , pad(this.getHours()) ,
+				':' , pad(this.getMinutes()) ,
+				':' , pad(this.getSeconds()) ,
+				'.' + pad3(this.getMilliseconds()) +
+				dif , pad(tzo / 60) ,
+				':' , pad(tzo % 60)].join("");
+		} 
+	} );
+	toProtoTypes$1.set( Boolean.prototype, { external:false, name:"Boolean", cb:this_value$1  } );
+	toProtoTypes$1.set( Number.prototype, { external:false, name:"Number"
+	    , cb:function(){ 
+			if( isNaN(this) )  return "NaN";
+			return (isFinite(this))
+				? String(this)
+				: (this<0)?"-Infinity":"Infinity";
+	    }
+	} );
+	toProtoTypes$1.set( String.prototype, { external:false
+	    , name : "String"
+	    , cb:function(){ return '"' + JSOX$2.escape(this_value$1.apply(this)) + '"' } } );
+	if( typeof BigInt === "function" )
+		toProtoTypes$1.set( BigInt.prototype
+		     , { external:false, name:"BigInt", cb:function() { return this + 'n' } } );
+
+	toProtoTypes$1.set( ArrayBuffer.prototype, { external:true, name:"ab"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this)+"]" }
+	} );
+
+	toProtoTypes$1.set( Uint8Array.prototype, { external:true, name:"u8"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Uint8ClampedArray.prototype, { external:true, name:"uc8"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Int8Array.prototype, { external:true, name:"s8"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Uint16Array.prototype, { external:true, name:"u16"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Int16Array.prototype, { external:true, name:"s16"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Uint32Array.prototype, { external:true, name:"u32"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Int32Array.prototype, { external:true, name:"s32"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	/*
+	if( typeof Uint64Array != "undefined" )
+		toProtoTypes.set( Uint64Array.prototype, { external:true, name:"u64"
+		    , cb:function() { return "["+base64ArrayBuffer(this.buffer)+"]" }
+		} );
+	if( typeof Int64Array != "undefined" )
+		toProtoTypes.set( Int64Array.prototype, { external:true, name:"s64"
+		    , cb:function() { return "["+base64ArrayBuffer(this.buffer)+"]" }
+		} );
+	*/
+	toProtoTypes$1.set( Float32Array.prototype, { external:true, name:"f32"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Float64Array.prototype, { external:true, name:"f64"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+	toProtoTypes$1.set( Float64Array.prototype, { external:true, name:"f64"
+	    , cb:function() { return "["+base64ArrayBuffer$2(this.buffer)+"]" }
+	} );
+
+	toProtoTypes$1.set( Map.prototype, mapToJSOX$1 = { external:true, name:"map"
+	    , cb:null
+	} );
+	fromProtoTypes$1.set( "map", { protoCon:Map, cb:function (field,val){
+		if( field ) {
+			this.set( field, val );
+			return undefined;
+		}
+		return this;
+	} } );
+
+	toProtoTypes$1.set( Array.prototype, arrayToJSOX$1 = { external:false, name:Array.prototype.constructor.name
+	    , cb: null		    
+	} );
+
+}
+function this_value$1() {/*//_DEBUG_STRINGIFY&&console.log( "this:", this, "valueof:", this&&this.valueOf() );*/ return this&&this.valueOf(); }
+
+JSOX$2.defineClass = function( name, obj ) {
+	var cls;
+	var denormKeys = Object.keys(obj);
+	for( var i = 1; i < denormKeys.length; i++ ) {
+		var a, b;
+		if( ( a = denormKeys[i-1] ) > ( b = denormKeys[i] ) ) {
+			denormKeys[i-1] = b;
+			denormKeys[i] = a;
+			if( i ) i-=2; // go back 2, this might need to go further pack.
+			else i--; // only 1 to check.
+		}
+	}
+	//console.log( "normalized:", denormKeys );
+	commonClasses$1.push( cls = { name : name
+		   , tag:denormKeys.toString()
+		   , proto : Object.getPrototypeOf(obj)
+		   , fields : Object.keys(obj) } );
+	for(var n = 1; n < cls.fields.length; n++) {
+		if( cls.fields[n] < cls.fields[n-1] ) {
+			let tmp = cls.fields[n-1];
+			cls.fields[n-1] = cls.fields[n];
+			cls.fields[n] = tmp;
+			if( n > 1 )
+				n-=2;
+		}
+	}
+	if( cls.proto === Object.getPrototypeOf( {} ) ) cls.proto = null;
+};
+
+
+JSOX$2.toJSOX =
+JSOX$2.registerToJSOX = function( name, ptype, f ) {
+	//console.log( "SET OBJECT TYPE:", ptype, ptype.prototype, Object.prototype, ptype.constructor );
+	if( !ptype.prototype || ptype.prototype !== Object.prototype ) {
+		if( toProtoTypes$1.get(ptype.prototype) ) throw new Error( "Existing toJSOX has been registered for prototype" );
+		//_DEBUG_PARSING && console.log( "PUSH PROTOTYPE" );
+		toProtoTypes$1.set( ptype.prototype, { external:true, name:name||f.constructor.name, cb:f } );
+	} else {
+		var key = Object.keys( ptype ).toString();
+		if( toObjectTypes$1.get(key) ) throw new Error( "Existing toJSOX has been registered for object type" );
+		//console.log( "TEST SET OBJECT TYPE:", key );
+		toObjectTypes$1.set( key, { external:true, name:name, cb:f } );
+	}
+};
+
+JSOX$2.fromJSOX = function( prototypeName, o, f ) {
+	function privateProto() { }
+		if( !o ) o = privateProto.prototype;
+		if( fromProtoTypes$1.get(prototypeName) ) throw new Error( "Existing fromJSOX has been registered for prototype" );
+		if( o && !("constructor" in o )){
+			throw new Error( "Please pass a prototype like thing...");
+	}
+	fromProtoTypes$1.set( prototypeName, {protoCon: o.prototype.constructor, cb:f } );
+
+};
+JSOX$2.registerFromJSOX = function( prototypeName, o /*, f*/ ) {
+	throw new Error( "deprecated; please adjust code to use fromJSOX:" + prototypeName + o.toString() );
+	/*
+	if( fromProtoTypes.get(prototypeName) ) throw new Error( "Existing fromJSOX has been registered for prototype" );
+	if( "function" === typeof o ) {
+		console.trace( "Please update usage of registration... proto and function")
+		f = o
+		o = Object.getPrototypeOf( {} );
+	} 
+	if( !f ) {
+		console.trace( "(missing f) Please update usage of registration... proto and function")
+	}
+	fromProtoTypes.set( prototypeName, {protoCon:o, cb:f } );
+	*/
+};
+JSOX$2.addType = function( prototypeName, prototype, to, from ) {
+	JSOX$2.toJSOX( prototypeName, prototype, to );
+	JSOX$2.fromJSOX( prototypeName, prototype, from );
+};
+
+JSOX$2.registerToFrom = function( prototypeName, prototype/*, to, from*/ ) {
+	throw new Error( "registerToFrom deprecated; please use addType:" + prototypeName + prototype.toString() );
+};
+
+JSOX$2.stringifier = function() {
+	var classes = [];
+	var useQuote = '"';
+
+	let fieldMap = new WeakMap();
+	const path = [];
+	var encoding = [];
+	const localToProtoTypes = new WeakMap();
+	const localToObjectTypes = new Map();
+	let objectToJSOX = null;
+	const stringifying = []; // things that have been stringified through external toJSOX; allows second pass to skip this toJSOX pass and encode 'normally'
+	let ignoreNonEnumerable = false;
+	const stringifier = {
+		defineClass(name,obj) { 
+			var cls; 
+			var denormKeys = Object.keys(obj);
+			for( var i = 1; i < denormKeys.length; i++ ) {
+				// normalize class key order
+				var a, b;
+				if( ( a = denormKeys[i-1] ) > ( b = denormKeys[i] ) ) {
+					denormKeys[i-1] = b;
+					denormKeys[i] = a;
+					if( i ) i-=2; // go back 2, this might need to go further pack.
+					else i--; // only 1 to check.
+				}
+			}
+			classes.push( cls = { name : name
+			       , tag:denormKeys.toString()
+			       , proto : Object.getPrototypeOf(obj)
+			       , fields : Object.keys(obj) } );
+
+			for(var n = 1; n < cls.fields.length; n++) {
+				if( cls.fields[n] < cls.fields[n-1] ) {
+					let tmp = cls.fields[n-1];
+					cls.fields[n-1] = cls.fields[n];
+					cls.fields[n] = tmp;
+					if( n > 1 )
+						n-=2;
+				}
+			}
+			if( cls.proto === Object.getPrototypeOf( {} ) ) cls.proto = null;
+		},
+		setDefaultObjectToJSOX( cb ) { objectToJSOX = cb; },
+		isEncoding(o) {
+			//console.log( "is object encoding?", encoding.length, o, encoding );
+			return !!encoding.find( (eo,i)=>eo===o && i < (encoding.length-1) )
+		},
+		encodeObject(o) {
+			if( objectToJSOX ) 
+				return objectToJSOX.apply(o, [this]);
+			return o;
+		},
+		stringify(o,r,s) { return stringify(o,r,s) },
+		setQuote(q) { useQuote = q; },
+		registerToJSOX(n,p,f) { return this.toJSOX( n,p,f ) },
+		toJSOX( name, ptype, f ) {
+			if( ptype.prototype && ptype.prototype !== Object.prototype ) {
+				if( localToProtoTypes.get(ptype.prototype) ) throw new Error( "Existing toJSOX has been registered for prototype" );
+				localToProtoTypes.set( ptype.prototype, { external:true, name:name||f.constructor.name, cb:f } );
+			} else {
+				var key = Object.keys( ptype ).toString();
+				if( localToObjectTypes.get(key) ) throw new Error( "Existing toJSOX has been registered for object type" );
+				localToObjectTypes.set( key, { external:true, name:name, cb:f } );
+			}
+		},
+		get ignoreNonEnumerable() { return ignoreNonEnumerable; },
+		set ignoreNonEnumerable(val) { ignoreNonEnumerable = val; },
+	};
+	return stringifier;
+
+	function getReference( here ) {
+		if( here === null ) return undefined;
+		var field = fieldMap.get( here );
+		//_DEBUG_STRINGIFY && console.log( "path:", _JSON.stringify(path), field );
+		if( !field ) {
+			fieldMap.set( here, _JSON$1.stringify(path) );
+			return undefined;
+		}
+		return field;
+	}
+
+
+
+	function matchObject(o,useK) {
+		var k;
+		var cls;
+		var prt = Object.getPrototypeOf(o);
+		cls = classes.find( cls=>{
+			if( cls.proto && cls.proto === prt ) return true;
+		} );
+		if( cls ) return cls;
+
+		if( classes.length || commonClasses$1.length ) {
+			if( useK )  {
+				useK = useK.map( v=>{ if( typeof v === "string" ) return v; else return undefined; } );
+				k = useK.toString();
+			} else {
+				var denormKeys = Object.keys(o);
+				for( var i = 1; i < denormKeys.length; i++ ) {
+					var a, b;
+					if( ( a = denormKeys[i-1] ) > ( b = denormKeys[i] ) ) {
+						denormKeys[i-1] = b;
+						denormKeys[i] = a;
+						if( i ) i-=2; // go back 2, this might need to go further pack.
+						else i--; // only 1 to check.
+					}
+				}
+				k = denormKeys.toString();
+			}
+			cls = classes.find( cls=>{
+				if( cls.tag === k ) return true;
+			} );
+			if( !cls )
+				cls = commonClasses$1.find( cls=>{
+					if( cls.tag === k ) return true;
+				} );
+		}
+		return cls;
+	}
+
+
+	function stringify( object, replacer, space ) {
+		if( object === undefined ) return "undefined";
+		if( object === null ) return;
+		var firstRun = true;
+		var gap;
+		var indent;
+		var rep;
+
+		var i;
+		const spaceType = typeof space;
+		const repType = typeof replacer;
+		gap = "";
+		indent = "";
+
+		// If the space parameter is a number, make an indent string containing that
+		// many spaces.
+
+		if (spaceType === "number") {
+			for (i = 0; i < space; i += 1) {
+				indent += " ";
+			}
+
+		// If the space parameter is a string, it will be used as the indent string.
+		} else if (spaceType === "string") {
+			indent = space;
+		}
+
+		// If there is a replacer, it must be a function or an array.
+		// Otherwise, throw an error.
+
+		rep = replacer;
+		if( replacer && repType !== "function"
+		    && ( repType !== "object"
+		       || typeof replacer.length !== "number"
+		   )) {
+			throw new Error("JSOX.stringify");
+		}
+
+		path.length = 0;
+		fieldMap = new WeakMap();
+
+		const finalResult = str( "", {"":object} );
+		commonClasses$1.length = 0;
+		return finalResult;
+
+		function getIdentifier(s) {
+			
+			if( !isNaN( s ) ) {
+				return ["'",s.toString(),"'"].join('');
+			}
+			//var n = s.length;
+			/*
+			for( n = 0; n < s.length; n++ ) {
+				let cInt = s.codePointAt(n);
+				if( cInt >= 0x10000 ) { n++; }
+				if( nonIdent[(cInt/(24*16))|0] && nonIdent[(cInt/(24*16))|0][(( cInt % (24*16) )/24)|0] & ( 1 << (cInt%24)) ) 
+					break;
+			}
+			*/
+			// should check also for if any non ident in string...
+			return ( ( s in keywords$1 /* [ "true","false","null","NaN","Infinity","undefined"].find( keyword=>keyword===s )*/
+				|| /([0-9-])/.test(s[0])
+				|| /((\n|\r|\t)|[ {}()<>!+*/.:,-])/.test( s ) )?(useQuote + JSOX$2.escape(s) +useQuote):s )
+			//return s;
+
+		}
+
+
+
+
+		// from https://github.com/douglascrockford/JSON-js/blob/master/json2.js#L181
+		function str(key, holder) {
+			function doArrayToJSOX() {
+				var v;
+				var partial = [];
+				let thisNodeNameIndex = path.length;
+
+				// The value is an array. Stringify every element. Use null as a placeholder
+				// for non-JSOX values.
+			
+				for (let i = 0; i < this.length; i += 1) {
+					path[thisNodeNameIndex] = i;
+					partial[i] = str(i, this) || "null";
+				}
+				path.length = thisNodeNameIndex;
+				//console.log( "remove encoding item", thisNodeNameIndex, encoding.length);
+				encoding.length = thisNodeNameIndex;
+			
+				// Join all of the elements together, separated with commas, and wrap them in
+				// brackets.
+				v = ( partial.length === 0
+					? "[]"
+					: gap
+						? [
+							"[\n"
+							, gap
+							, partial.join(",\n" + gap)
+							, "\n"
+							, mind
+							, "]"
+						].join("")
+						: "[" + partial.join(",") + "]" );
+				return v;
+			} 
+			function mapToObject(){
+				//_DEBUG_PARSING_DETAILS && console.log( "---------- NEW MAP -------------" );
+				var tmp = {tmp:null};
+				var out = '{';
+				var first = true;
+				//console.log( "CONVERT:", map);
+				for (var [key, value] of this) {
+					//console.log( "er...", key, value )
+					tmp.tmp = value;
+					var thisNodeNameIndex = path.length;
+					path[thisNodeNameIndex] = key;
+							
+					out += (first?"":",") + getIdentifier(key) +':' + str("tmp", tmp);
+					path.length = thisNodeNameIndex;
+					first = false;
+				}
+				out += '}';
+				//console.log( "out is:", out );
+				return out;
+			}
+			if( firstRun ) {
+				arrayToJSOX$1.cb = doArrayToJSOX;
+				mapToJSOX$1.cb = mapToObject;
+				firstRun = false;
+			}
+
+		// Produce a string from holder[key].
+
+			var i;          // The loop counter.
+			var k;          // The member key.
+			var v;          // The member value.
+			var length;
+			var mind = gap;
+			var partialClass;
+			var partial;
+			let thisNodeNameIndex = path.length;
+			let value = holder[key];
+			let isObject = (typeof value === "object");
+			let c;
+
+			if( isObject && ( value !== null ) ) {
+				if( objectToJSOX ){
+					if( !stringifying.find( val=>val===value ) ) {
+						stringifying.push( value );
+						encoding[thisNodeNameIndex] = value;
+						value = objectToJSOX.apply(value, [stringifier]);
+						//console.log( "Converted by object lookup -it's now a different type"
+						//	, protoConverter, objectConverter );
+						isObject = ( typeof value === "object" );
+						stringifying.pop();
+						encoding.length = thisNodeNameIndex;
+						isObject = (typeof value === "object");
+					}
+					//console.log( "Value convereted to:", key, value );
+				}
+			}
+			const objType = (value !== undefined && value !== null) && Object.getPrototypeOf( value );
+			
+			var protoConverter = objType
+				&& ( localToProtoTypes.get( objType ) 
+				|| toProtoTypes$1.get( objType ) 
+				|| null );
+			var objectConverter = !protoConverter && (value !== undefined && value !== null) 
+				&& ( localToObjectTypes.get( Object.keys( value ).toString() ) 
+				|| toObjectTypes$1.get( Object.keys( value ).toString() ) 
+				|| null );
+
+				//console.log( "PROTOTYPE:", Object.getPrototypeOf( value ) )
+				//console.log( "PROTOTYPE:", toProtoTypes.get(Object.getPrototypeOf( value )) )
+				if( protoConverter )
+			//_DEBUG_STRINGIFY && console.log( "TEST()", value, protoConverter, objectConverter );
+
+			var toJSOX = ( protoConverter && protoConverter.cb ) 
+			          || ( objectConverter && objectConverter.cb );
+			// If the value has a toJSOX method, call it to obtain a replacement value.
+			//_DEBUG_STRINGIFY && console.log( "type:", typeof value, protoConverter, !!toJSOX, path );
+
+			if( value !== undefined
+			    && value !== null
+			    && typeof toJSOX === "function"
+			) {
+				gap += indent;
+				if( typeof value === "object" ) {
+					v = getReference( value );
+					//_DEBUG_STRINGIFY && console.log( "This object is not yet an tracked object path:", v, value  );
+					if( v ) return "ref"+v;
+				}
+
+				let newValue = toJSOX.call(value,stringifier);
+				//_DEBUG_STRINGIFY && console.log( "translated ", newValue, value );
+				value = newValue;
+				gap = mind;
+			} else 
+				if( typeof value === "object" ) {
+					v = getReference( value );
+					if( v ) return "ref"+v;
+				}
+
+			// If we were called with a replacer function, then call the replacer to
+			// obtain a replacement value.
+
+			if (typeof rep === "function") {
+				value = rep.call(holder, key, value);
+			}
+			// What happens next depends on the value's type.
+			switch (typeof value) {
+			case "bigint":
+				return value + 'n';
+			case "string":
+			case "number": 
+				{
+					let c = '';
+					if( key==="" )
+						c = classes.map( cls=> cls.name+"{"+cls.fields.join(",")+"}" ).join(gap?"\n":"")+
+						    commonClasses$1.map( cls=> cls.name+"{"+cls.fields.join(",")+"}" ).join(gap?"\n":"")
+								+(gap?"\n":"");
+					if( protoConverter && protoConverter.external ) 
+						return c + protoConverter.name + value;
+					if( objectConverter && objectConverter.external ) 
+						return c + objectConverter.name + value;
+					return c + value;//useQuote+JSOX.escape( value )+useQuote;
+				}
+			case "boolean":
+			case "null":
+
+				// If the value is a boolean or null, convert it to a string. Note:
+				// typeof null does not produce "null". The case is included here in
+				// the remote chance that this gets fixed someday.
+
+				return String(value);
+
+				// If the type is "object", we might be dealing with an object or an array or
+				// null.
+
+			case "object":
+				//_DEBUG_STRINGIFY && console.log( "ENTERINT OBJECT EMISSION WITH:", v );
+				if( v ) return "ref"+v;
+
+				// Due to a specification blunder in ECMAScript, typeof null is "object",
+				// so watch out for that case.
+				if (!value) {
+					return "null";
+				}
+
+				// Make an array to hold the partial results of stringifying this object value.
+				gap += indent;
+				partialClass = null;
+				partial = [];
+
+				// If the replacer is an array, use it to select the members to be stringified.
+				if (rep && typeof rep === "object") {
+					length = rep.length;
+					partialClass = matchObject( value, rep );
+					for (i = 0; i < length; i += 1) {
+						if (typeof rep[i] === "string") {
+							k = rep[i];
+							path[thisNodeNameIndex] = k;
+							v = str(k, value);
+
+							if (v) {
+								if( partialClass ) {
+									partial.push(v);
+							} else
+									partial.push( getIdentifier(k) 
+									+ (
+										(gap)
+											? ": "
+											: ":"
+									) + v);
+							}
+						}
+					}
+					path.splice( thisNodeNameIndex, 1 );
+				} else {
+
+					// Otherwise, iterate through all of the keys in the object.
+					partialClass = matchObject( value );
+					var keys = [];
+					for (k in value) {
+						if( ignoreNonEnumerable )
+							if( !Object.prototype.propertyIsEnumerable.call( value, k ) ){
+								//_DEBUG_STRINGIFY && console.log( "skipping non-enuerable?", k );
+								continue;
+							}
+						if (Object.prototype.hasOwnProperty.call(value, k)) {
+							var n;
+							for( n = 0; n < keys.length; n++ ) 
+								if( keys[n] > k ) {	
+									keys.splice(n,0,k );
+									break;
+								}
+							if( n == keys.length )
+								keys.push(k);
+						}
+					}
+					for(n = 0; n < keys.length; n++) {
+						k = keys[n];
+						if (Object.prototype.hasOwnProperty.call(value, k)) {
+							path[thisNodeNameIndex] = k;
+							v = str(k, value);
+
+							if (v) {
+								if( partialClass ) {
+									partial.push(v);
+							} else
+									partial.push(getIdentifier(k) + (
+										(gap)
+											? ": "
+											: ":"
+									) + v);
+							}
+						}
+					}
+					path.splice( thisNodeNameIndex, 1 );
+				}
+
+				// Join all of the member texts together, separated with commas,
+				// and wrap them in braces.
+				//_DEBUG_STRINGIFY && console.log( "partial:", partial )
+
+				//let c;
+				if( key==="" )
+					c = ( classes.map( cls=> cls.name+"{"+cls.fields.join(",")+"}" ).join(gap?"\n":"")
+						|| commonClasses$1.map( cls=> cls.name+"{"+cls.fields.join(",")+"}" ).join(gap?"\n":""))+(gap?"\n":"");
+				else
+					c = '';
+
+				if( protoConverter && protoConverter.external ) 
+					c = c + getIdentifier(protoConverter.name);
+
+				//_DEBUG_STRINGIFY && console.log( "PREFIX FOR THIS FIELD:", c );
+				var ident = null;
+				if( partialClass )
+					ident = getIdentifier( partialClass.name ) ;
+				v = c +
+					( partial.length === 0
+					? "{}"
+					: gap
+							? (partialClass?ident:"")+"{\n" + gap + partial.join(",\n" + gap) + "\n" + mind + "}"
+							: (partialClass?ident:"")+"{" + partial.join(",") + "}"
+					);
+
+				gap = mind;
+				return v;
+			}
+		}
+
+	}
+
+	
+	
+};
+
+	// Converts an ArrayBuffer directly to base64, without any intermediate 'convert to string then
+	// use window.btoa' step. According to my tests, this appears to be a faster approach:
+	// http://jsperf.com/encoding-xhr-image-data/5
+	// doesn't have to be reversable....
+	const encodings$4 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+	const decodings$3 = { '~':-1
+		,'=':-1
+		,'$':62
+		,'_':63
+		,'+':62
+		,'-':62
+		,'.':62
+		,'/':63
+		,',':63
+	};
+	
+	for( var x$3 = 0; x$3 < 256; x$3++ ) {
+		if( x$3 < 64 ) {
+			decodings$3[encodings$4[x$3]] = x$3;
+		}
+	}
+	Object.freeze( decodings$3 );
+	
+	function base64ArrayBuffer$2(arrayBuffer) {
+		var base64    = '';
+	
+		var bytes         = new Uint8Array(arrayBuffer);
+		var byteLength    = bytes.byteLength;
+		var byteRemainder = byteLength % 3;
+		var mainLength    = byteLength - byteRemainder;
+	
+		var a, b, c, d;
+		var chunk;
+		//throw "who's using this?"
+		//console.log( "buffer..", arrayBuffer )
+		// Main loop deals with bytes in chunks of 3
+		for (var i = 0; i < mainLength; i = i + 3) {
+			// Combine the three bytes into a single integer
+			chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+
+			// Use bitmasks to extract 6-bit segments from the triplet
+			a = (chunk & 16515072) >> 18; // 16515072 = (2^6 - 1) << 18
+			b = (chunk & 258048)   >> 12; // 258048   = (2^6 - 1) << 12
+			c = (chunk & 4032)     >>  6; // 4032     = (2^6 - 1) << 6
+			d = chunk & 63;               // 63       = 2^6 - 1
+	
+			// Convert the raw binary segments to the appropriate ASCII encoding
+			base64 += encodings$4[a] + encodings$4[b] + encodings$4[c] + encodings$4[d];
+		}
+	
+	// Deal with the remaining bytes and padding
+		if (byteRemainder == 1) {
+			chunk = bytes[mainLength];
+			a = (chunk & 252) >> 2; // 252 = (2^6 - 1) << 2
+			// Set the 4 least significant bits to zero
+			b = (chunk & 3)   << 4; // 3   = 2^2 - 1
+			base64 += encodings$4[a] + encodings$4[b] + '==';
+		} else if (byteRemainder == 2) {
+			chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1];
+			a = (chunk & 64512) >> 10; // 64512 = (2^6 - 1) << 10
+			b = (chunk & 1008)  >>  4; // 1008  = (2^6 - 1) << 4
+			// Set the 2 least significant bits to zero
+			c = (chunk & 15)    <<  2; // 15    = 2^4 - 1
+			base64 += encodings$4[a] + encodings$4[b] + encodings$4[c] + '=';
+		}
+		//console.log( "dup?", base64)
+		return base64
+	}
+	
+	
+	function DecodeBase64$3( buf ) {	
+		var outsize;
+		if( buf.length % 4 == 1 )
+			outsize = ((((buf.length + 3) / 4)|0) * 3) - 3;
+		else if( buf.length % 4 == 2 )
+			outsize = ((((buf.length + 3) / 4)|0) * 3) - 2;
+		else if( buf.length % 4 == 3 )
+			outsize = ((((buf.length + 3) / 4)|0) * 3) - 1;
+		else if( decodings$3[buf[buf.length - 3]] == -1 )
+			outsize = ((((buf.length + 3) / 4)|0) * 3) - 3;
+		else if( decodings$3[buf[buf.length - 2]] == -1 ) 
+			outsize = ((((buf.length + 3) / 4)|0) * 3) - 2;
+		else if( decodings$3[buf[buf.length - 1]] == -1 ) 
+			outsize = ((((buf.length + 3) / 4)|0) * 3) - 1;
+		else
+			outsize = ((((buf.length + 3) / 4)|0) * 3);
+		var ab = new ArrayBuffer( outsize );
+		var out = new Uint8Array(ab);
+
+		var n;
+		var l = (buf.length+3)>>2;
+		for( n = 0; n < l; n++ ) {
+			var index0 = decodings$3[buf[n*4]];
+			var index1 = (n*4+1)<buf.length?decodings$3[buf[n*4+1]]:-1;
+			var index2 = (index1>=0) && (n*4+2)<buf.length?decodings$3[buf[n*4+2]]:-1 ;
+			var index3 = (index2>=0) && (n*4+3)<buf.length?decodings$3[buf[n*4+3]]:-1 ;
+			if( index1 >= 0 )
+				out[n*3+0] = (( index0 ) << 2 | ( index1 ) >> 4);
+			if( index2 >= 0 )
+				out[n*3+1] = (( index1 ) << 4 | ( ( ( index2 ) >> 2 ) & 0x0f ));
+			if( index3 >= 0 )
+				out[n*3+2] = (( index2 ) << 6 | ( ( index3 ) & 0x3F ));
+		}
+
+		return ab;
+	}
+	
+	
+JSOX$2.stringify = function( object, replacer, space ) {
+	var stringifier = JSOX$2.stringifier();
+	return stringifier.stringify( object, replacer, space );
+};
+
+const nonIdent$1 = 
+[ [ 0,256,[ 0xffd9ff,0xff6aff,0x1fc00,0x380000,0x0,0xfffff8,0xffffff,0x7fffff] ]
+].map( row=>{ return { firstChar : row[0], lastChar: row[1], bits : row[2] }; } );
+
 {
 	const head = document.head;
 	let l = document.createElement( "link" );
@@ -5448,7 +9315,7 @@ const l = {
 
 
 var history = localStorage.getItem( "Command History" );
-l.commandHistory = history &&JSOX$1.parse( history ) || [];
+l.commandHistory = history &&JSOX$2.parse( history ) || [];
 
 function openSocket() {
 
@@ -5459,12 +9326,16 @@ function openSocket() {
 		// Web Socket is connected. You can send data by send() method.
 		//ws.send("message to send"); 
 		l.ws = ws;
+		//ws.send( "{op:initDone}");
 		//ws.send( '{ op: "write", data:"/help" }' );
 	};
+	ws.onerror = function (a,b) { 
+		console.log( "was there a sensible error?", a, b );
+	};
 	ws.onmessage = function (evt) { 
-		const msg_ = JSON.parse( evt.data );
+		const msg_ = JSOX$2.parse( evt.data );
 		if( !ws.processMessage || !ws.processMessage( msg_ ) )
-			processMessage( msg_ );
+			processMessage( ws, msg_ );
 	};
 	ws.onclose = function() { 
 		l.ws = null;
@@ -5481,10 +9352,15 @@ function openSocket() {
 
 openSocket();
 
-function processMessage( msg ) {
+function processMessage( ws, msg ) {
+	if( msg.op === "start" ) {
+		prerun( msg.Λ, ws );
+	}
 	if( msg.op === "write" ) {
 		remoteConsole.write( msg.data, msg.prompt );
 	}
+
+	// this needs to be sanbox prerun thiing.
 	
 }
 
@@ -5604,10 +9480,10 @@ function setCaretToEnd(target/*: HTMLDivElement*/) {
 		if( l.commandHistory.length > 128 ) // if there's a lot of commands
 			l.commandHistory.splice( 32, 0 );  // throw away a bunch of history..
 			
-		localStorage.setItem( "Command History", JSOX$1.stringify( l.commandHistory ) );
+		localStorage.setItem( "Command History", JSOX$2.stringify( l.commandHistory ) );
 		vcon.inputPrompt = vcon.input; // update until a new prompt
 		remoteConsole.write( "\n", false );
-		l.ws.send( JSON.stringify( { op:"write", data:cmd } ) );
+		l.ws.send( JSOX$2.stringify( { op:"write", data:cmd } ) );
 		vcon.input.textContent = '';
 		vcon.input.focus();
 	}

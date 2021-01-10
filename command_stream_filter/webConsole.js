@@ -46,7 +46,7 @@ function createSpawnServer( sandbox ) {
 			req.connection.socket.remoteAddress;
 		//ws.clientAddress = ip;
 
-		console.warn( "Received request:", req.url );
+		console.log( "Received request:", req.url );
 		if( req.url === "/" ) req.url = "/index.html";
 		var filePath = root + unescape(req.url);
 		//console.warn( "Path? failed?", filePath, path );
@@ -107,12 +107,23 @@ function createSpawnServer( sandbox ) {
 				e.wake(false).then( ()=>{
 					//sack.log( "Tell it to require web connection startup")
 					e.require(  "./startupWebConnection.js" ).then( ()=>{
-						conn.post( e.Λ );
+						if( !conn.post( e.Λ ) )
+						{
+							console.log( "Post failed... listener is not setup yet..." );
+						}
 					})
 				})
 			} else if( protocol === "EntityRemote" )	{
-				conn.post( e.Λ ); // throw to the core
 				e.wake(true); // allow core entity to post direct
+				function tick() {
+					if( !conn.post( e.Λ ) ) // throw to the core
+					{
+						console.log( "Post failed... listener is not setup yet..." );
+						setTimeout( tick, 1 );
+					}
+				}
+				setTimeout( tick, 1 );
+
 			}
 		} );
 	} );

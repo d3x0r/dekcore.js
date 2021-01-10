@@ -26,7 +26,7 @@ function openSocket() {
 	ws.send( '{ op: "write", data:"/help" }' );
 	};
 	ws.onmessage = function (evt) { 
-		const msg_ = JSON.parse( evt.data );
+		const msg_ = JSOX.parse( evt.data );
 		if( !ws.processMessage || !ws.processMessage( msg_ ) )
 			processMessage( msg_ );
 	};
@@ -172,7 +172,7 @@ function setCaretToEnd(target/*: HTMLDivElement*/) {
 		localStorage.setItem( "Command History", JSOX.stringify( l.commandHistory ) );
 		vcon.inputPrompt = vcon.input; // update until a new prompt
 		remoteConsole.write( "\n", false );
-		l.ws.send( JSON.stringify( { op:"write", data:cmd } ) );
+		l.ws.send( JSOX.stringify( { op:"write", data:cmd } ) );
 		vcon.input.textContent = '';
 		vcon.input.focus();
 	}
