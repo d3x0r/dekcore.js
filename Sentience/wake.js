@@ -92,7 +92,7 @@ function WakeEntity( e, noWorker, socket ) {
 						for( let i = 0; i < eParts.length; i++ ) f = f[eParts[i]];
 						if( !f )
 							console.log( "Failed to find function for 'e':", o, msg.e  )
-						_debug_entity_command_handling && console.log( "Calling method:", msg.e, msg.id  );
+						_debug_entity_command_handling && console.log( "Calling method:", msg.e, msg.id, msg );
 						var r = f.apply(o, msg.args);
 						_debug_entity_command_handling && console.log( "Done with that method...", msg.e, msg.id );
 						if( r instanceof Promise ) {
@@ -284,8 +284,7 @@ function WakeEntity( e, noWorker, socket ) {
 		//socket.accept()
 
 		socket.on("message",processMessage);
-		const invokePrerun = `{op:start,code:${JSON.stringify('const Λ=' + JSON.stringify(e.Λ.toString()) + ";" 
-				+ startupPrerunCode + invokePrerun)}}`
+		const invokePrerun = `{op:start,Λ:'${e.Λ.toString()}'}`
 		socket.send( invokePrerun );
 
 
@@ -302,7 +301,8 @@ function WakeEntity( e, noWorker, socket ) {
 		}
 		thread.socket.send = mySend;
 		thread.socket.on("message",processMessage);
-		thread
+		console.log( "waiting for remote send?" );
+		//thread
 		return new Promise( (res,rej)=>{
 			resolveThread = res;
 		})
@@ -316,7 +316,7 @@ function WakeEntity( e, noWorker, socket ) {
 		const invokePrerun = `{vm.runInContext( ${JSON.stringify(startupPrerunCode)}, sandbox, {filename:"sandboxPrerun.js"});}`
 
 		fc.cvol.mount(e.Λ.toString()); 
-			
+		
 		thread.worker = new wt.Worker( 'const Λ=' + JSON.stringify(e.Λ.toString()) + ";" 
 			+ 'Λ.maker=' + JSON.stringify(e.created_by.Λ.toString()) + ";" 
 			+ startupInitCode
