@@ -1164,12 +1164,23 @@ var entityMethods = {
 		}
 		, wake( socket ) {
 			if( !this.thread ) {
-				if( socket ) 
-				   return sack.WebSocket.Thread.accept(this.Λ.toString(),async (id,ws)=>{ 
+				if( socket ) {
+					
+				   const newsock = sack.WebSocket.Thread.accept(this.Λ.toString(),async (id,ws)=>{ 
 						// should validate the the ID is the expected ID.
-						return wake.WakeEntity( this, true, ws );
-					} );
-				else
+			        	ws.resume();
+						const promise= wake.WakeEntity( this, true, ws ).then( (arg)=>{
+							return arg;
+						} );
+						return promise;
+					} )
+					if( newsock ) 
+						newsock.then( (x)=>{ 
+			        		ws.resume();
+							return x;
+						} );
+					return newsock;
+				} else
 					return wake.WakeEntity( this, false, null );
 			} 
 			return Promise.resolve(this.thread);
