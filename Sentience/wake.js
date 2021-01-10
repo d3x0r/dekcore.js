@@ -277,6 +277,7 @@ function WakeEntity( e, noWorker, socket ) {
 		}
 	}
 	e.thread = thread;
+
 	if( socket ) {
 		_debug_thread_create && console.trace( "Waking up entity:", e.name, e.Λ, e.thread )
 		// this is the thread that should be this...
@@ -284,9 +285,9 @@ function WakeEntity( e, noWorker, socket ) {
 		//socket.accept()
 
 		socket.on("message",processMessage);
+
 		const invokePrerun = `{op:start,Λ:'${e.Λ.toString()}'}`
 		socket.send( invokePrerun );
-
 
 	}
 	var resolveThread;
@@ -301,8 +302,6 @@ function WakeEntity( e, noWorker, socket ) {
 		}
 		thread.socket.send = mySend;
 		thread.socket.on("message",processMessage);
-		console.log( "waiting for remote send?" );
-		//thread
 		return new Promise( (res,rej)=>{
 			resolveThread = res;
 		})
