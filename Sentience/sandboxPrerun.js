@@ -415,8 +415,8 @@ function makeEntity(Λ) {
 			}
 			return e.post("run", file, code)
 		},
-		wake() {
-			return e.post("wake");
+		wake(socket) {
+			return e.post("wake",socket);
 		},
 		require(src) {
 			//_debug_requires && 
