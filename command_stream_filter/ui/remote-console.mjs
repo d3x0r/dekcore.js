@@ -8,6 +8,8 @@ const Λ = {
 import "../../Sentience/sandboxInit2.mjs"
 import {prerun} from "../../Sentience/sandboxPrerun2.mjs"
 
+import {Filter as shell} from "./shell/shell.mjs"
+
 import {popups} from "@d3x0r/popups";
 
 import {JSOX} from "./jsox.mjs";
